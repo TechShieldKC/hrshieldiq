@@ -68,14 +68,12 @@ const HRShieldIQ = () => {
   }, [currentStep, currentCategory]);
 
   const [paypalLoading, setPaypalLoading] = useState(false);
-  const [paypalSdkType, setPaypalSdkType] = useState(null);
-
-  const neededSdkType = selectedPlan === 'onetime' ? 'onetime' : 'subscription';
+  const [paypalLoaded, setPaypalLoaded] = useState(false);
 
   // Load PayPal SDK
   useEffect(() => {
     if (showPaywall && !paymentComplete && businessInfo.email && businessInfo.email.includes('@')) {
-      if (paypalSdkType !== neededSdkType) {
+      if (!paypalLoaded) {
         setPaypalLoading(true);
         const existingScripts = document.querySelectorAll('script[src*="paypal.com/sdk"]');
         existingScripts.forEach(s => s.remove());
@@ -83,16 +81,11 @@ const HRShieldIQ = () => {
         
         const script = document.createElement('script');
         const clientId = 'ATtOAGgoUaBRiQSclDhG6I7ER_KhNPgWGs3WUJYgs1fIUw4htpDW0d8NRCzehPkLxTNNBorisya_-NaK';
-        
-        if (neededSdkType === 'onetime') {
-          script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
-        } else {
-          script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&vault=true&intent=subscription`;
-        }
+        script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
         
         script.async = true;
         script.onload = () => {
-          setPaypalSdkType(neededSdkType);
+          setPaypalLoaded(true);
           setPaypalLoading(false);
           renderPayPalButton();
         };
@@ -105,10 +98,10 @@ const HRShieldIQ = () => {
         renderPayPalButton();
       }
     }
-  }, [showPaywall, paymentComplete, businessInfo.email, neededSdkType, paypalSdkType]);
+  }, [showPaywall, paymentComplete, businessInfo.email, paypalLoaded]);
 
   useEffect(() => {
-    if (showPaywall && !paymentComplete && window.paypal && paypalSdkType === neededSdkType && !paypalLoading) {
+    if (showPaywall && !paymentComplete && window.paypal && paypalLoaded && !paypalLoading) {
       renderPayPalButton();
     }
   }, [selectedPlan]);
@@ -117,11 +110,6 @@ const HRShieldIQ = () => {
     if (!paypalRef.current || !window.paypal) return;
     
     paypalRef.current.innerHTML = '';
-    
-    const subscriptionPlanIds = {
-      'quarterly': 'P-HRSHIELD-QUARTERLY-ID',
-      'annual': 'P-HRSHIELD-ANNUAL-ID'
-    };
     
     if (selectedPlan === 'onetime') {
       window.paypal.Buttons({
@@ -146,21 +134,28 @@ const HRShieldIQ = () => {
           alert('Payment failed. Please try again.');
         }
       }).render(paypalRef.current);
-    } else {
+    } else if (selectedPlan === 'annual') {
+      // Annual plan - 4 quarterly reports for $29.99/year
       window.paypal.Buttons({
-        style: { shape: 'pill', color: 'gold', layout: 'vertical', label: 'subscribe', height: 45 },
-        createSubscription: (data, actions) => {
-          return actions.subscription.create({ plan_id: subscriptionPlanIds[selectedPlan] });
+        style: { layout: 'vertical', color: 'gold', shape: 'pill', label: 'paypal', height: 45 },
+        createOrder: (data, actions) => {
+          return actions.order.create({
+            purchase_units: [{
+              description: 'HRShieldIQ™ - Annual Plan (4 Quarterly Reports)',
+              amount: { value: '29.99' }
+            }]
+          });
         },
-        onApprove: (data, actions) => {
-          console.log('Subscription successful!');
+        onApprove: async (data, actions) => {
+          const order = await actions.order.capture();
+          console.log('Annual plan payment successful:', order);
           setPaymentComplete(true);
           setShowPaywall(false);
           generateReport();
         },
         onError: (err) => {
-          console.error('PayPal subscription error:', err);
-          alert('Subscription failed. Please try again.');
+          console.error('PayPal error:', err);
+          alert('Payment failed. Please try again.');
         }
       }).render(paypalRef.current);
     }
@@ -739,14 +734,17 @@ REQUIREMENTS:
               Start Free Assessment →
             </button>
             <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: colors.gray }}>
-              Takes about 7 minutes • Pay only when you want results
+              Free score preview. Full personalized report: <span style={{ color: colors.primary, fontWeight: 600 }}>$19.99</span>
             </p>
+            <a href="/sample-report.html" style={{ fontSize: '0.85rem', color: colors.grayLight, textDecoration: 'underline' }}>
+              View a sample report
+            </a>
           </div>
           
           {/* Footer */}
           <div style={{ marginTop: '3rem', paddingTop: '1.5rem', borderTop: `1px solid ${colors.grayDark}22`, textAlign: 'center' }}>
             <p style={{ fontSize: '0.75rem', color: colors.grayDark }}>
-              © {new Date().getFullYear()} HRShieldIQ™ by <a href="https://techshieldkc.com" style={{ color: colors.gray, textDecoration: 'none' }}>TechShield KC LLC</a>
+              Powered by <a href="https://techshieldkc.com" style={{ color: colors.gray, textDecoration: 'none' }}>TechShield </a><a href="https://techshieldkc.com" style={{ color: colors.primary, textDecoration: 'none' }}>KC LLC</a>
             </p>
             <p style={{ fontSize: '0.7rem', marginTop: '0.5rem' }}>
               <a href="/privacy.html" style={{ color: colors.grayDark, textDecoration: 'none', marginRight: '1rem' }}>Privacy Policy</a>
@@ -853,8 +851,8 @@ REQUIREMENTS:
                 <option value="50-99 employees">50-99 employees (ACA threshold)</option>
                 <option value="100+ employees">100+ employees</option>
               </select>
-              <p style={{ fontSize: '0.75rem', color: colors.grayDark, marginTop: '0.5rem' }}>
-                Different laws apply at 15, 20, and 50 employee thresholds
+              <p style={{ fontSize: '0.95rem', color: colors.grayLight, marginTop: '0.5rem', fontWeight: 500 }}>
+                ⚠️ Different laws apply at 15, 20, and 50 employee thresholds
               </p>
             </div>
           </div>
@@ -1150,6 +1148,7 @@ REQUIREMENTS:
                 }}>
                   <div style={{ fontSize: '2rem', fontWeight: 700, color: colors.primary }}>{pendingReport.score}</div>
                   <div style={{ color: colors.gray, fontSize: '0.85rem' }}>out of 500</div>
+                  <div style={{ color: colors.grayDark, fontSize: '0.75rem', marginTop: '0.25rem' }}>25 questions × 20 points = 500 max</div>
                   <div style={{
                     display: 'inline-block',
                     background: pendingReport.riskLevel === 'HIGH RISK' ? '#dc2626' :
@@ -1246,10 +1245,63 @@ REQUIREMENTS:
                 {promoError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.25rem' }}>{promoError}</p>}
               </div>
               
-              {/* Pricing */}
-              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                <div style={{ fontSize: '2rem', fontWeight: 700, color: colors.primary }}>$19.99</div>
-                <div style={{ color: colors.gray, fontSize: '0.85rem' }}>One-time payment</div>
+              {/* Plan Selection */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  {/* One-time option */}
+                  <button
+                    onClick={() => setSelectedPlan('onetime')}
+                    style={{
+                      flex: 1,
+                      background: selectedPlan === 'onetime' ? colors.primaryLight : colors.darkBg,
+                      border: `2px solid ${selectedPlan === 'onetime' ? colors.primary : colors.grayDark}`,
+                      borderRadius: '10px',
+                      padding: '1rem',
+                      cursor: 'pointer',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: selectedPlan === 'onetime' ? colors.primary : colors.white }}>$19.99</div>
+                    <div style={{ fontSize: '0.8rem', color: colors.gray }}>One-time</div>
+                  </button>
+                  
+                  {/* Annual option */}
+                  <button
+                    onClick={() => setSelectedPlan('annual')}
+                    style={{
+                      flex: 1,
+                      background: selectedPlan === 'annual' ? colors.primaryLight : colors.darkBg,
+                      border: `2px solid ${selectedPlan === 'annual' ? colors.primary : colors.grayDark}`,
+                      borderRadius: '10px',
+                      padding: '1rem',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      position: 'relative'
+                    }}
+                  >
+                    <div style={{
+                      position: 'absolute',
+                      top: '-10px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: '#22c55e',
+                      color: 'white',
+                      fontSize: '0.65rem',
+                      fontWeight: 600,
+                      padding: '2px 8px',
+                      borderRadius: '10px'
+                    }}>BEST VALUE</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: selectedPlan === 'annual' ? colors.primary : colors.white }}>$29.99</div>
+                    <div style={{ fontSize: '0.8rem', color: colors.gray }}>Annual</div>
+                    <div style={{ fontSize: '0.7rem', color: '#22c55e', marginTop: '0.25rem' }}>4 reports/year</div>
+                  </button>
+                </div>
+                
+                {selectedPlan === 'annual' && (
+                  <p style={{ fontSize: '0.75rem', color: colors.gray, textAlign: 'center', marginTop: '0.75rem' }}>
+                    Quarterly assessments with 5 new questions each time
+                  </p>
+                )}
               </div>
               
               {/* PayPal */}
@@ -1319,92 +1371,257 @@ REQUIREMENTS:
   if (currentStep === 'report' && report) {
     const downloadPdf = () => {
       const reportWindow = window.open('', '_blank');
-      
-      const prioritiesHtml = (report.priorities || []).map((p, i) => 
-        `<div style="background:#eff6ff;border-left:4px solid #2563EB;padding:12px 16px;margin:10px 0;border-radius:0 8px 8px 0;"><strong style="color:#2563EB;">${i+1}. ${p.title}</strong><p style="margin:5px 0 0;font-size:10pt;color:#555;">${p.reason}</p></div>`
-      ).join('');
-      
-      const criticalHtml = (report.criticalIssues || []).length > 0 ? 
-        '<h2>🔴 Critical Issues</h2>' + report.criticalIssues.map(issue => 
-          `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:15px;margin:12px 0;"><h3 style="color:#dc2626;margin:0 0 8px;font-size:12pt;">${issue.topic}</h3><p style="margin:0 0 8px;font-size:10pt;"><strong>Your answer:</strong> "${issue.answer}"</p><p style="margin:0 0 8px;font-size:10pt;color:#666;"><strong>Risk:</strong> ${issue.risk}</p><p style="margin:0 0 8px;font-size:10pt;"><strong>Fix:</strong> ${issue.fix}</p><p style="margin:0;font-size:9pt;color:#888;"><strong>Effort:</strong> ${issue.effort}</p></div>`
-        ).join('') : '';
-      
-      const attentionHtml = (report.attentionIssues || []).length > 0 ?
-        '<h2>🟡 Needs Attention</h2>' + report.attentionIssues.map(issue =>
-          `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:15px;margin:12px 0;"><h3 style="color:#d97706;margin:0 0 8px;font-size:12pt;">${issue.topic}</h3><p style="margin:0 0 8px;font-size:10pt;"><strong>Your answer:</strong> "${issue.answer}"</p><p style="margin:0 0 8px;font-size:10pt;color:#666;"><strong>Risk:</strong> ${issue.risk}</p><p style="margin:0 0 8px;font-size:10pt;"><strong>Fix:</strong> ${issue.fix}</p><p style="margin:0;font-size:9pt;color:#888;"><strong>Effort:</strong> ${issue.effort}</p></div>`
-        ).join('') : '';
-      
-      const goodHtml = (report.goodPractices || []).length > 0 ?
-        '<h2>✅ Good Practices</h2><div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:15px;">' +
-        report.goodPractices.map(p => `<p style="margin:5px 0;font-size:10pt;">✓ ${p}</p>`).join('') + '</div>' : '';
-      
-      const week1 = (report.actionPlan?.week1 || []).map(t => `<li>${t}</li>`).join('');
-      const week2 = (report.actionPlan?.week2to4 || []).map(t => `<li>${t}</li>`).join('');
-      const ongoing = (report.actionPlan?.ongoing || []).map(t => `<li>${t}</li>`).join('');
+      if (!reportWindow) return;
       
       const r = report;
       
-      const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HRShieldIQ Report - ${businessInfo.name}</title>
-        <style>
-          body{font-family:'Segoe UI',Arial,sans-serif;max-width:800px;margin:0 auto;padding:40px;color:#333;font-size:11pt;line-height:1.6;}
-          h1{color:#2563EB;border-bottom:3px solid #2563EB;padding-bottom:10px;}
-          h2{color:#2563EB;border-bottom:1px solid #ddd;padding-bottom:8px;margin-top:30px;font-size:14pt;}
-          .score-box{background:#eff6ff;border:3px solid #2563EB;padding:25px;text-align:center;border-radius:12px;margin:20px 0;}
-          .score-num{font-size:48pt;font-weight:bold;color:#2563EB;}
-          .risk-badge{display:inline-block;background:#f59e0b;color:white;padding:8px 20px;border-radius:20px;font-weight:600;}
-          .summary-grid{display:flex;justify-content:center;gap:20px;margin:15px 0;}
-          .summary-item{text-align:center;padding:15px 25px;border-radius:8px;}
-          .critical-bg{background:#fee2e2;}.attention-bg{background:#fef3c7;}.good-bg{background:#d1fae5;}
-          .summary-num{font-size:24pt;font-weight:bold;}
-          .critical-num{color:#dc2626;}.attention-num{color:#f59e0b;}.good-num{color:#10b981;}
-          .action-plan{background:#f8fafc;border-radius:12px;padding:20px;margin:20px 0;}
-          .action-week{margin:15px 0;}
-          .action-week h3{color:#2563EB;font-size:11pt;margin-bottom:8px;}
-          .action-week ul{margin:0;padding-left:20px;}
-          .share-box{background:#eff6ff;border:2px solid #2563EB;border-radius:12px;padding:20px;margin:20px 0;}
-          .share-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
-          .share-item{background:white;padding:10px;border-radius:6px;font-size:10pt;}
-          .consult-box{background:#f8fafc;border:2px solid #2563EB;border-radius:12px;padding:20px;margin:20px 0;text-align:center;}
-          .resources{margin-top:30px;}
-          .res-grid{display:flex;flex-wrap:wrap;gap:10px;}
-          .res-grid a{background:#eff6ff;color:#2563EB;padding:8px 15px;border-radius:6px;text-decoration:none;font-size:10pt;}
-          .disclaimer{background:#f5f5f5;padding:15px;border-radius:8px;font-size:9pt;color:#666;margin-top:30px;}
-          .footer{text-align:center;margin-top:40px;padding-top:20px;border-top:2px solid #2563EB;color:#888;font-size:9pt;}
-        </style></head><body>
-        <h1>HRShieldIQ™ Assessment Report</h1>
-        <p><strong>${businessInfo.name}</strong> | ${businessInfo.industry} | ${businessInfo.size}</p>
-        <p style="color:#888;font-size:10pt;">Generated: ${new Date().toLocaleDateString()}</p>
-        <div class="score-box">
-          <div class="score-num">${r.score || 0}</div>
-          <div style="color:#666;">out of 500 points</div>
-          <div class="risk-badge" style="background:${r.riskLevel==='HIGH RISK'?'#dc2626':r.riskLevel==='ELEVATED RISK'?'#f59e0b':r.riskLevel==='MODERATE'?'#3b82f6':'#10b981'}">${r.riskLevel || 'ASSESSED'}</div>
-        </div>
-        <div class="summary-grid">
-          <div class="summary-item critical-bg"><div class="summary-num critical-num">${r.criticalCount || 0}</div><div>Critical</div></div>
-          <div class="summary-item attention-bg"><div class="summary-num attention-num">${r.attentionCount || 0}</div><div>Attention</div></div>
-          <div class="summary-item good-bg"><div class="summary-num good-num">${r.goodCount || 0}</div><div>Good</div></div>
-        </div>
-        <h2>Executive Summary</h2><p>${r.executiveSummary || 'Assessment completed.'}</p>
-        <h2>Top 3 Priorities</h2>${prioritiesHtml}
-        ${criticalHtml}${attentionHtml}${goodHtml}
-        <div class="action-plan"><h2>🎯 Your 30-Day Action Plan</h2>
-          <div class="action-week"><h3>⚡ Week 1: Quick Wins</h3><ul>${week1}</ul></div>
-          <div class="action-week"><h3>🔧 Week 2-4: Core Improvements</h3><ul>${week2}</ul></div>
-          <div class="action-week"><h3>🔄 Ongoing</h3><ul>${ongoing}</ul></div>
-        </div>
-        <div class="share-box"><h3>📤 Who to Share This Report With</h3>
-          <div class="share-list">
-            <div class="share-item"><strong>Employment Attorney</strong> - Handbook review</div>
-            <div class="share-item"><strong>Accountant/CPA</strong> - Classification issues</div>
-            <div class="share-item"><strong>Office Manager</strong> - Implementation</div>
-            <div class="share-item"><strong>Insurance Agent</strong> - EPLI coverage</div>
+      // Priorities section
+      const prioritiesHtml = (r.priorities || []).map((p, i) => 
+        `<div class="priority-box">
+          <h4>${i+1}. ${p.title}</h4>
+          <p>${p.reason}</p>
+        </div>`
+      ).join('');
+      
+      // Critical issues section  
+      const criticalHtml = (r.criticalIssues || []).length > 0 ? 
+        '<h2>🔴 Critical Issues</h2>' + r.criticalIssues.map(issue => 
+          `<div class="issue-card critical">
+            <div class="issue-header">
+              <span class="issue-title">${issue.topic}</span>
+              <span class="badge critical">CRITICAL</span>
+            </div>
+            <div class="issue-answer">"${issue.answer}"</div>
+            <div class="issue-content">
+              <p><strong>Risk:</strong> ${issue.risk}</p>
+              <p><strong>Fix:</strong> ${issue.fix}</p>
+              <p><strong>Effort:</strong> ⏱️ ${issue.effort}</p>
+            </div>
+          </div>`
+        ).join('') : '';
+      
+      // Attention issues section
+      const attentionHtml = (r.attentionIssues || []).length > 0 ?
+        '<h2>🟡 Items Needing Attention</h2>' + r.attentionIssues.map(issue =>
+          `<div class="issue-card attention">
+            <div class="issue-header">
+              <span class="issue-title">${issue.topic}</span>
+              <span class="badge attention">NEEDS ATTENTION</span>
+            </div>
+            <div class="issue-answer">"${issue.answer}"</div>
+            <div class="issue-content">
+              <p><strong>Risk:</strong> ${issue.risk}</p>
+              <p><strong>Fix:</strong> ${issue.fix}</p>
+              <p><strong>Effort:</strong> ⏱️ ${issue.effort}</p>
+            </div>
+          </div>`
+        ).join('') : '';
+      
+      // Good practices section
+      const goodHtml = (r.goodPractices || []).length > 0 ?
+        `<div class="good-section">
+          <h3>✅ What You're Doing Well</h3>
+          <div class="good-list">
+            ${r.goodPractices.map(p => `<div class="good-item"><span class="check">✓</span><span class="good-text">${p}</span></div>`).join('')}
           </div>
-        </div>
-        <div class="consult-box"><h3 style="color:#2563EB;">Need Help Implementing?</h3><p>TechShield KC can assist with consultations and HR compliance support.</p><p><a href="https://www.techshieldkc.com" style="color:#2563EB;">www.techshieldkc.com</a></p></div>
-        <div class="resources"><h3>📚 Free Resources</h3><div class="res-grid"><a href="https://dol.gov/agencies/whd">DOL Wage & Hour</a><a href="https://eeoc.gov/employers">EEOC Guidance</a><a href="https://shrm.org">SHRM Resources</a><a href="https://uscis.gov/i-9">I-9 Information</a></div></div>
-        <div class="disclaimer"><strong>Important:</strong> This HRShieldIQ™ assessment is educational guidance based on self-reported answers. It is not an HR audit, legal advice, or compliance certification.</div>
-        <div class="footer"><p><strong>TechShield KC LLC</strong></p><p>hrshieldiq.com | info@techshieldkc.com</p><p>© ${new Date().getFullYear()} HRShieldIQ™</p></div>
-        </body></html>`;
+        </div>` : '';
+      
+      // Action plan lists
+      const week1 = (r.actionPlan?.week1 || []).map(t => `<li>${t}</li>`).join('');
+      const week2 = (r.actionPlan?.week2to4 || []).map(t => `<li>${t}</li>`).join('');
+      const ongoing = (r.actionPlan?.ongoing || []).map(t => `<li>${t}</li>`).join('');
+      
+      const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>HRShieldIQ Report - ${businessInfo.name}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Segoe UI, Arial, sans-serif; max-width: 850px; margin: 0 auto; padding: 40px; background: #fff; color: #333; line-height: 1.6; font-size: 11pt; }
+    .download-bar { background: #2563EB; color: white; padding: 15px 20px; margin: -40px -40px 30px -40px; display: flex; justify-content: space-between; align-items: center; }
+    .download-bar button { background: white; color: #2563EB; border: none; padding: 10px 25px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; }
+    .header { text-align: center; margin-bottom: 30px; padding-bottom: 25px; border-bottom: 3px solid #2563EB; }
+    .logo { font-size: 32px; font-weight: bold; margin-bottom: 5px; }
+    .logo span { color: #2563EB; }
+    .header p { color: #666; margin: 5px 0; }
+    .header .meta { font-size: 10pt; color: #888; }
+    h2 { color: #333; font-size: 16pt; margin: 30px 0 15px; padding-bottom: 8px; border-bottom: 2px solid #2563EB; }
+    .score-box { background: #eff6ff; border: 3px solid #2563EB; padding: 30px; border-radius: 12px; text-align: center; margin: 25px 0; }
+    .score-number { font-size: 48pt; font-weight: bold; color: #2563EB; }
+    .score-label { font-size: 14pt; color: #666; margin-top: 5px; }
+    .score-calc { font-size: 10pt; color: #888; margin-top: 10px; }
+    .risk-level { display: inline-block; background: #f59e0b; color: white; padding: 8px 20px; border-radius: 20px; font-weight: 600; margin-top: 15px; }
+    .summary-table { display: flex; justify-content: center; gap: 30px; margin: 20px 0; flex-wrap: wrap; }
+    .summary-item { text-align: center; padding: 15px 25px; border-radius: 8px; min-width: 120px; }
+    .summary-item.critical { background: #fee2e2; }
+    .summary-item.attention { background: #fef3c7; }
+    .summary-item.good { background: #d1fae5; }
+    .summary-item .num { font-size: 28pt; font-weight: bold; }
+    .summary-item.critical .num { color: #dc2626; }
+    .summary-item.attention .num { color: #f59e0b; }
+    .summary-item.good .num { color: #10b981; }
+    .summary-item .label { font-size: 10pt; color: #666; }
+    .fraud-stat { background: #fee2e2; border: 2px solid #dc2626; border-radius: 12px; padding: 20px; margin: 25px 0; }
+    .fraud-stat h3 { color: #991b1b; margin: 0 0 12px; font-size: 13pt; text-align: center; }
+    .fraud-stat-content { background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #dc2626; }
+    .fraud-stat-content p { margin: 0 0 8px; color: #991b1b; font-weight: 600; font-size: 12pt; }
+    .fraud-stat-content .source { margin: 0; font-size: 9pt; color: #666; font-style: italic; }
+    .priority-box { background: #eff6ff; border-left: 4px solid #2563EB; padding: 20px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+    .priority-box h4 { color: #2563EB; margin-bottom: 8px; }
+    .issue-card { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; margin: 15px 0; }
+    .issue-card.critical { border-left: 4px solid #dc2626; }
+    .issue-card.attention { border-left: 4px solid #f59e0b; }
+    .issue-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+    .issue-title { font-weight: 600; color: #333; }
+    .badge { padding: 4px 12px; border-radius: 12px; font-size: 9pt; font-weight: 600; }
+    .badge.critical { background: #fee2e2; color: #dc2626; }
+    .badge.attention { background: #fef3c7; color: #b45309; }
+    .issue-answer { background: #f5f5f5; padding: 10px 15px; border-radius: 6px; font-style: italic; color: #666; margin: 10px 0; }
+    .issue-content p { margin: 8px 0; }
+    .good-section { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #10b981; border-radius: 12px; padding: 20px 25px; margin: 20px 0; }
+    .good-section h3 { color: #10b981; margin-bottom: 15px; font-size: 14pt; text-align: center; }
+    .good-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; }
+    .good-item { display: flex; align-items: center; gap: 8px; background: white; border: 1px solid #10b981; border-radius: 8px; padding: 10px 14px; }
+    .good-item .check { color: #10b981; font-weight: bold; font-size: 14pt; }
+    .good-text { font-size: 11pt; color: #166534; font-weight: 500; }
+    .action-plan { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #2563EB; padding: 25px; border-radius: 12px; margin: 25px 0; }
+    .action-plan h2 { color: #2563EB; border: none; margin: 0 0 15px; font-size: 16pt; text-align: center; }
+    .action-week { background: white; border-radius: 8px; padding: 15px 20px; margin: 12px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    .action-week h3 { color: #2563EB; font-size: 13pt; margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid #bfdbfe; }
+    .action-week ul { margin: 0; padding-left: 20px; }
+    .action-week li { margin: 8px 0; color: #333; font-size: 11pt; }
+    .share-box { background: #f0f9ff; border: 2px solid #0ea5e9; padding: 20px 25px; border-radius: 8px; margin: 20px 0; text-align: center; }
+    .share-box h3 { color: #0369a1; margin-bottom: 15px; font-size: 14pt; }
+    .share-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 25px; text-align: left; max-width: 650px; margin: 0 auto; }
+    .share-item { font-size: 11pt; color: #333; }
+    .consult-box { background: #eff6ff; border: 2px solid #2563EB; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+    .consult-box h3 { color: #2563EB; margin-bottom: 8px; font-size: 14pt; }
+    .consult-box p { font-size: 11pt; color: #555; margin: 8px 0; }
+    .consult-box a { color: #2563EB; text-decoration: none; font-size: 14pt; font-weight: 600; }
+    .resources { background: #f0f9ff; border: 2px solid #0ea5e9; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+    .resources h3 { color: #0369a1; margin-bottom: 12px; font-size: 14pt; }
+    .res-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .res-grid a { display: block; background: white; padding: 12px 10px; border-radius: 6px; color: #2563EB; text-decoration: none; font-size: 10pt; font-weight: 500; text-align: center; border: 1px solid #e0f2fe; }
+    .disclaimer { background: #f5f5f5; padding: 12px 15px; border-radius: 8px; font-size: 9pt; color: #666; margin: 20px 0; text-align: center; }
+    .footer { text-align: center; margin-top: 25px; padding-top: 15px; border-top: 2px solid #2563EB; color: #888; font-size: 9pt; }
+    .footer strong { color: #2563EB; }
+    @media print { .download-bar { display: none !important; } }
+  </style>
+</head>
+<body>
+
+<div class="download-bar">
+  <span>📄 Your HRShieldIQ™ Report</span>
+  <button onclick="window.print()">🖨️ Save as PDF / Print</button>
+</div>
+
+<div class="header">
+  <div class="logo">HRShield<span>IQ</span>™</div>
+  <p>Employment Compliance Assessment</p>
+  <p class="meta">Prepared for: <strong>${businessInfo.name}</strong> | ${businessInfo.industry} | ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+</div>
+
+<div class="score-box">
+  <div class="score-number">${r.score || 0}</div>
+  <div class="score-label">out of 500 points</div>
+  <div class="score-calc">25 questions × 20 points = 500 max</div>
+  <div class="risk-level" style="background:${r.riskLevel==='HIGH RISK'?'#dc2626':r.riskLevel==='ELEVATED RISK'?'#f59e0b':r.riskLevel==='MODERATE'?'#3b82f6':'#10b981'}">${r.riskLevel || 'ASSESSED'}</div>
+</div>
+
+<div class="summary-table">
+  <div class="summary-item critical">
+    <div class="num">${r.criticalCount || 0}</div>
+    <div class="label">Critical Issues</div>
+  </div>
+  <div class="summary-item attention">
+    <div class="num">${r.attentionCount || 0}</div>
+    <div class="label">Needs Attention</div>
+  </div>
+  <div class="summary-item good">
+    <div class="num">${r.goodCount || 0}</div>
+    <div class="label">Good Practices</div>
+  </div>
+</div>
+
+<div class="fraud-stat">
+  <h3>⚠️ ${businessInfo.industry} Industry Risk</h3>
+  <div class="fraud-stat-content">
+    <p>Employment lawsuits have increased 400% over the past 20 years. The EEOC recovered over $700 million for discrimination victims in 2024 alone.</p>
+    <p class="source">Source: EEOC Annual Performance Report 2024</p>
+  </div>
+</div>
+
+<h2>Executive Summary</h2>
+<p>${r.executiveSummary || 'Assessment completed. See details below.'}</p>
+
+<h2>Top 3 Priorities</h2>
+${prioritiesHtml}
+
+${criticalHtml}
+
+${attentionHtml}
+
+${goodHtml}
+
+<div class="action-plan">
+  <h2>🎯 Your 30-Day Action Plan</h2>
+  
+  <div class="action-week">
+    <h3>⚡ Week 1: Quick Wins</h3>
+    <ul>${week1 || '<li>Review critical issues above</li>'}</ul>
+  </div>
+  
+  <div class="action-week">
+    <h3>🔧 Week 2-4: Core Improvements</h3>
+    <ul>${week2 || '<li>Address attention items</li>'}</ul>
+  </div>
+  
+  <div class="action-week">
+    <h3>🔄 Ongoing</h3>
+    <ul>${ongoing || '<li>Annual compliance review</li>'}</ul>
+  </div>
+</div>
+
+<div class="share-box">
+  <h3>📤 Who to Share This Report With</h3>
+  <div class="share-list">
+    <div class="share-item"><strong>Employment Attorney</strong> - Handbook & policy review</div>
+    <div class="share-item"><strong>Insurance Agent</strong> - EPLI coverage discussion</div>
+    <div class="share-item"><strong>Accountant/CPA</strong> - Classification & wage issues</div>
+    <div class="share-item"><strong>Office Manager</strong> - Day-to-day implementation</div>
+  </div>
+</div>
+
+<div class="consult-box">
+  <h3>Need Help Implementing These Recommendations?</h3>
+  <p>TechShield KC can assist with consultations and HR compliance support.</p>
+  <p><a href="https://www.techshieldkc.com">www.techshieldkc.com</a></p>
+  <p>info@techshieldkc.com | Kansas City, MO</p>
+</div>
+
+<div class="resources">
+  <h3>📚 Free Resources</h3>
+  <div class="res-grid">
+    <a href="https://dol.gov/agencies/whd">DOL Wage & Hour</a>
+    <a href="https://eeoc.gov/employers">EEOC Employers</a>
+    <a href="https://shrm.org">SHRM Resources</a>
+    <a href="https://uscis.gov/i-9">I-9 Central</a>
+  </div>
+</div>
+
+<div class="disclaimer">
+  <strong>Important:</strong> This HRShieldIQ™ assessment is educational guidance based on self-reported answers. It is not an HR audit, legal advice, or compliance certification.
+</div>
+
+<div class="footer">
+  <p><strong>TechShield KC LLC</strong></p>
+  <p>hrshieldiq.com | info@techshieldkc.com</p>
+  <p>© ${new Date().getFullYear()} HRShieldIQ™</p>
+</div>
+
+</body>
+</html>`;
 
       reportWindow.document.write(htmlContent);
       reportWindow.document.close();
