@@ -68,26 +68,29 @@ const HRShieldIQ = () => {
   }, [currentStep, currentCategory]);
 
   const [paypalLoading, setPaypalLoading] = useState(false);
-  const [paypalLoaded, setPaypalLoaded] = useState(false);
+  const [paypalSdkReady, setPaypalSdkReady] = useState(false);
 
-  // Load PayPal SDK
+  // Load PayPal SDK and render button when paywall opens
   useEffect(() => {
     if (showPaywall && !paymentComplete && businessInfo.email && businessInfo.email.includes('@')) {
-      if (!paypalLoaded) {
+      if (!paypalSdkReady) {
         setPaypalLoading(true);
+        
+        // Remove any existing PayPal scripts
         const existingScripts = document.querySelectorAll('script[src*="paypal.com/sdk"]');
         existingScripts.forEach(s => s.remove());
         window.paypal = undefined;
         
+        // Load PayPal SDK
         const script = document.createElement('script');
         const clientId = 'ATtOAGgoUaBRiQSclDhG6I7ER_KhNPgWGs3WUJYgs1fIUw4htpDW0d8NRCzehPkLxTNNBorisya_-NaK';
         script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
         
         script.async = true;
         script.onload = () => {
-          setPaypalLoaded(true);
+          setPaypalSdkReady(true);
           setPaypalLoading(false);
-          renderPayPalButton();
+          setTimeout(() => renderPayPalButton(), 100);
         };
         script.onerror = () => {
           setPaypalLoading(false);
@@ -98,7 +101,14 @@ const HRShieldIQ = () => {
         renderPayPalButton();
       }
     }
-  }, [showPaywall, paymentComplete, businessInfo.email, paypalLoaded]);
+  }, [showPaywall, paymentComplete, businessInfo.email, paypalSdkReady]);
+
+  // Re-render button when paywall reopens
+  useEffect(() => {
+    if (showPaywall && !paymentComplete && window.paypal && paypalSdkReady && !paypalLoading) {
+      setTimeout(() => renderPayPalButton(), 100);
+    }
+  }, [showPaywall]);
 
   const renderPayPalButton = () => {
     if (!paypalRef.current || !window.paypal) return;
@@ -106,7 +116,13 @@ const HRShieldIQ = () => {
     paypalRef.current.innerHTML = '';
     
     window.paypal.Buttons({
-      style: { layout: 'vertical', color: 'gold', shape: 'pill', label: 'paypal', height: 45 },
+      style: { 
+        layout: 'vertical', 
+        color: 'gold', 
+        shape: 'pill', 
+        label: 'paypal', 
+        height: 45 
+      },
       createOrder: (data, actions) => {
         return actions.order.create({
           purchase_units: [{
@@ -118,6 +134,9 @@ const HRShieldIQ = () => {
       onApprove: async (data, actions) => {
         const order = await actions.order.capture();
         console.log('Payment successful:', order);
+        console.log('Customer email:', businessInfo.email);
+        console.log('Business name:', businessInfo.name);
+        console.log('Transaction ID:', order.id);
         setPaymentComplete(true);
         setShowPaywall(false);
         generateReport(true);
