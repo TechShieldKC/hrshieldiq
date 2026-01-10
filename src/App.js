@@ -1232,7 +1232,7 @@ CRITICAL REQUIREMENTS:
               <button
                 onClick={() => {
                   generateReportAPI();
-                  setShowPaywall(true);
+                  setCurrentStep('preview');
                 }}
                 disabled={answeredQuestions < totalQuestions}
                 style={{
@@ -1252,8 +1252,218 @@ CRITICAL REQUIREMENTS:
             )}
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // PREVIEW SCREEN - Assessment Complete with blurred score
+  if (currentStep === 'preview') {
+    // Calculate estimates from answers
+    const calculateEstimates = () => {
+      let critical = 0;
+      let attention = 0;
+      let good = 0;
+      
+      Object.values(answers).forEach(answer => {
+        const lower = answer.toLowerCase();
+        if (lower.includes('no') || lower.includes('never') || lower.includes('not sure') || lower.includes('none') || lower.includes("don't") || lower.includes('varies')) {
+          critical++;
+        } else if (lower.includes('some') || lower.includes('partial') || lower.includes('occasionally') || lower.includes('informal') || lower.includes('think so') || lower.includes('usually')) {
+          attention++;
+        } else {
+          good++;
+        }
+      });
+      
+      return { critical, attention, good };
+    };
+    
+    const estimates = calculateEstimates();
+    const displayData = pendingReport ? {
+      critical: pendingReport.criticalCount || 0,
+      attention: pendingReport.attentionCount || 0,
+      good: pendingReport.goodCount || 0
+    } : estimates;
+
+    return (
+      <div style={baseStyles}>
+        <style>{globalStyles}</style>
         
-        {/* PAYWALL MODAL */}
+        <div style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem 1rem' }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: colors.primary, marginBottom: '0.5rem' }}>
+              Assessment Complete!
+            </h1>
+            <p style={{ color: colors.gray, fontSize: '0.9rem' }}>{businessInfo.name}</p>
+          </div>
+
+          {/* Locked Score Card */}
+          <div style={{
+            background: colors.darkCard,
+            borderRadius: '16px',
+            padding: '2rem',
+            textAlign: 'center',
+            marginBottom: '1.5rem',
+            border: `2px solid ${colors.primary}`,
+            position: 'relative'
+          }}>
+            <div style={{ fontSize: '4rem', fontWeight: 700, color: colors.primary, filter: 'blur(8px)' }}>
+              {pendingReport?.score || 324}
+            </div>
+            <div style={{ color: colors.gray, fontSize: '1rem', marginBottom: '1rem', filter: 'blur(4px)' }}>out of 500</div>
+            <div style={{
+              display: 'inline-block',
+              background: '#f59e0b',
+              color: 'white',
+              padding: '0.5rem 1.5rem',
+              borderRadius: '20px',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              filter: 'blur(4px)'
+            }}>
+              {pendingReport?.riskLevel || 'CALCULATING'}
+            </div>
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: 'rgba(0,0,0,0.8)',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              border: `1px solid ${colors.primary}`
+            }}>
+              <span style={{ fontSize: '1.5rem' }}>🔒</span>
+              <span style={{ color: colors.white, marginLeft: '0.5rem', fontWeight: 600 }}>Unlock Your Score</span>
+            </div>
+          </div>
+
+          {/* Stats - visible */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '1rem',
+            marginBottom: '1.5rem',
+            flexWrap: 'wrap'
+          }}>
+            <div style={{
+              background: '#fee2e2',
+              padding: '1rem 1.5rem',
+              borderRadius: '10px',
+              textAlign: 'center',
+              minWidth: '100px'
+            }}>
+              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#dc2626' }}>{displayData.critical}</div>
+              <div style={{ fontSize: '0.75rem', color: '#991b1b' }}>Critical</div>
+            </div>
+            <div style={{
+              background: '#fef3c7',
+              padding: '1rem 1.5rem',
+              borderRadius: '10px',
+              textAlign: 'center',
+              minWidth: '100px'
+            }}>
+              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f59e0b' }}>{displayData.attention}</div>
+              <div style={{ fontSize: '0.75rem', color: '#92400e' }}>Attention</div>
+            </div>
+            <div style={{
+              background: '#d1fae5',
+              padding: '1rem 1.5rem',
+              borderRadius: '10px',
+              textAlign: 'center',
+              minWidth: '100px'
+            }}>
+              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#10b981' }}>{displayData.good}</div>
+              <div style={{ fontSize: '0.75rem', color: '#065f46' }}>Good</div>
+            </div>
+          </div>
+
+          {/* Sample Report Preview - BLURRED */}
+          <div style={{
+            background: colors.darkCard,
+            borderRadius: '12px',
+            padding: '1.5rem',
+            marginBottom: '1.5rem'
+          }}>
+            <h3 style={{ color: colors.white, fontSize: '1rem', marginBottom: '1rem' }}>
+              📋 Sample from your report:
+            </h3>
+            <div style={{ position: 'relative' }}>
+              <div style={{ filter: 'blur(3px)', pointerEvents: 'none' }}>
+                <div style={{ background: colors.darkBg, padding: '0.75rem', borderRadius: '8px', marginBottom: '0.5rem', borderLeft: '3px solid #dc2626' }}>
+                  <span style={{ color: '#dc2626', fontWeight: 600 }}>Critical:</span>
+                  <span style={{ color: colors.gray }}> Your I-9 storage practices need immediate attention to avoid ICE audit penalties...</span>
+                </div>
+                <div style={{ background: colors.darkBg, padding: '0.75rem', borderRadius: '8px', marginBottom: '0.5rem', borderLeft: '3px solid #f59e0b' }}>
+                  <span style={{ color: '#f59e0b', fontWeight: 600 }}>Attention:</span>
+                  <span style={{ color: colors.gray }}> Performance documentation should be formalized with written records...</span>
+                </div>
+                <div style={{ background: colors.darkBg, padding: '0.75rem', borderRadius: '8px', borderLeft: '3px solid #10b981' }}>
+                  <span style={{ color: '#10b981', fontWeight: 600 }}>Strong:</span>
+                  <span style={{ color: colors.gray }}> Workers' compensation insurance is properly maintained and current...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* What's in the Report */}
+          <div style={{
+            background: colors.primaryLight,
+            border: `1px solid ${colors.primaryBorder}`,
+            borderRadius: '12px',
+            padding: '1.25rem',
+            marginBottom: '1.5rem',
+            textAlign: 'center'
+          }}>
+            <p style={{ fontWeight: 600, color: colors.white, marginBottom: '0.75rem', fontSize: '0.95rem' }}>
+              Your personalized report includes:
+            </p>
+            <div style={{ fontSize: '0.9rem', color: colors.grayLight, lineHeight: 1.9 }}>
+              <div><span style={{ color: colors.primary }}>✓</span> Your exact HRShieldIQ™ score</div>
+              <div><span style={{ color: colors.primary }}>✓</span> Detailed analysis of all 25 compliance areas</div>
+              <div><span style={{ color: colors.primary }}>✓</span> Specific risks for {businessInfo.industry || 'your'} organizations</div>
+              <div><span style={{ color: colors.primary }}>✓</span> Step-by-step fix instructions with time estimates</div>
+              <div><span style={{ color: colors.primary }}>✓</span> 30-day action plan prioritized by impact</div>
+              <div><span style={{ color: colors.primary }}>✓</span> PDF download for your records</div>
+            </div>
+          </div>
+
+          {/* Unlock Button */}
+          <button
+            onClick={() => setShowPaywall(true)}
+            style={{
+              width: '100%',
+              background: colors.primary,
+              border: 'none',
+              borderRadius: '10px',
+              padding: '1rem',
+              color: colors.white,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              boxShadow: `0 4px 20px ${colors.primary}40`,
+              marginBottom: '1rem'
+            }}
+          >
+            🔓 Unlock Full Report - $29.99
+          </button>
+
+          <p style={{ textAlign: 'center', color: colors.grayDark, fontSize: '0.75rem' }}>
+            One-time purchase • Instant access • PDF download included
+          </p>
+          
+          {/* Footer */}
+          <div style={{ textAlign: 'center', marginTop: '2rem', paddingTop: '1rem', borderTop: `1px solid ${colors.grayDark}33` }}>
+            <p style={{ fontSize: '0.7rem', color: colors.grayDark }}>
+              <a href="/privacy.html" style={{ color: colors.grayDark, textDecoration: 'none', marginRight: '1rem' }}>Privacy Policy</a>
+              <a href="/terms.html" style={{ color: colors.grayDark, textDecoration: 'none' }}>Terms of Service</a>
+            </p>
+          </div>
+        </div>
+
+        {/* Paywall Modal */}
         {showPaywall && (
           <div style={{
             position: 'fixed',
@@ -1466,8 +1676,8 @@ CRITICAL REQUIREMENTS:
                   <div ref={paypalRef} style={{ minHeight: paypalLoading ? '0' : '45px' }}></div>
                 </div>
               ) : (
-                <p style={{ textAlign: 'center', color: colors.gray, fontSize: '0.8rem' }}>
-                  Enter your email above to see payment options
+                <p style={{ textAlign: 'center', color: colors.primary, fontSize: '0.8rem' }}>
+                  ↑ Enter email to continue
                 </p>
               )}
               
