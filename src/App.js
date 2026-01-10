@@ -4,7 +4,7 @@ const HRShieldIQ = () => {
   const [currentStep, setCurrentStep] = useState('intro');
   const [currentCategory, setCurrentCategory] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [businessInfo, setBusinessInfo] = useState({ name: '', industry: '', size: '', email: '' });
+  const [businessInfo, setBusinessInfo] = useState({ name: '', industry: '', size: '', state: '', email: '' });
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -730,26 +730,62 @@ REQUIREMENTS:
         <style>{globalStyles}</style>
         
         <div style={{ maxWidth: '500px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-              HRShield<span style={{ color: colors.primary }}>IQ</span>
-            </h1>
-            <p style={{ color: colors.gray, fontSize: '0.95rem' }}>Let's personalize your assessment</p>
+          {/* Header with Back and Time */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <button
+              onClick={() => setCurrentStep('intro')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: colors.grayLight,
+                cursor: 'pointer',
+                fontSize: '0.95rem',
+                padding: 0,
+                fontFamily: 'inherit'
+              }}
+            >
+              ← Back
+            </button>
+            <span style={{ color: colors.gray, fontSize: '0.9rem' }}>
+              ⏱️ About 7 minutes
+            </span>
           </div>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Main Heading */}
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.75rem', color: colors.white }}>
+            Personalize your report
+          </h1>
+          <p style={{ color: colors.gray, fontSize: '1rem', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+            We'll customize your report with <span style={{ color: colors.white, fontWeight: 500 }}>industry specific risks</span> and benchmarks.
+          </p>
+          
+          {/* Score Explanation Box */}
+          <div style={{
+            background: colors.darkCard,
+            border: `1px solid ${colors.grayDark}44`,
+            borderRadius: '10px',
+            padding: '1rem 1.25rem',
+            marginBottom: '2rem'
+          }}>
+            <p style={{ color: colors.gray, fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
+              <span style={{ color: colors.primary, fontWeight: 600 }}>HRShieldIQ™ Score:</span> 25 questions × 20 points each = <span style={{ color: colors.white, fontWeight: 600 }}>500 max</span>. Higher is better. Your score reflects HR compliance readiness based on DOL & EEOC guidelines.
+            </p>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Organization Name */}
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.95rem' }}>
                 Organization Name <span style={{ color: colors.primary }}>*</span>
               </label>
               <input
                 type="text"
-                placeholder="e.g., Johnson Consulting LLC"
+                placeholder="Your Business Name"
                 value={businessInfo.name}
                 onChange={e => setBusinessInfo(prev => ({ ...prev, name: e.target.value }))}
                 style={{
                   width: '100%',
-                  padding: '0.875rem 1rem',
+                  padding: '1rem 1.25rem',
                   background: colors.darkCard,
                   border: `1px solid ${colors.grayDark}44`,
                   borderRadius: '8px',
@@ -759,16 +795,20 @@ REQUIREMENTS:
               />
             </div>
             
+            {/* Industry */}
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: 500, fontSize: '0.95rem' }}>
                 Industry <span style={{ color: colors.primary }}>*</span>
               </label>
+              <p style={{ color: colors.grayDark, fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                This customizes your report with relevant compliance risks
+              </p>
               <select
                 value={businessInfo.industry}
                 onChange={e => setBusinessInfo(prev => ({ ...prev, industry: e.target.value }))}
                 style={{
                   width: '100%',
-                  padding: '0.875rem 1rem',
+                  padding: '1rem 1.25rem',
                   background: colors.darkCard,
                   border: `1px solid ${colors.grayDark}44`,
                   borderRadius: '8px',
@@ -776,7 +816,7 @@ REQUIREMENTS:
                   fontSize: '1rem'
                 }}
               >
-                <option value="">Select industry...</option>
+                <option value="">Select your industry...</option>
                 <option value="Construction / Trades">Construction / Trades</option>
                 <option value="Daycare / Childcare">Daycare / Childcare</option>
                 <option value="Education / School">Education / School</option>
@@ -794,16 +834,17 @@ REQUIREMENTS:
               </select>
             </div>
             
+            {/* Organization Size */}
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>
-                Number of Employees <span style={{ color: colors.primary }}>*</span>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.95rem' }}>
+                Organization Size <span style={{ color: colors.primary }}>*</span>
               </label>
               <select
                 value={businessInfo.size}
                 onChange={e => setBusinessInfo(prev => ({ ...prev, size: e.target.value }))}
                 style={{
                   width: '100%',
-                  padding: '0.875rem 1rem',
+                  padding: '1rem 1.25rem',
                   background: colors.darkCard,
                   border: `1px solid ${colors.grayDark}44`,
                   borderRadius: '8px',
@@ -814,16 +855,14 @@ REQUIREMENTS:
                 <option value="">Select size...</option>
                 <option value="1-4 employees">1-4 employees</option>
                 <option value="5-14 employees">5-14 employees</option>
-                <option value="15-49 employees">15-49 employees (ADA/FMLA thresholds)</option>
-                <option value="50-99 employees">50-99 employees (ACA threshold)</option>
+                <option value="15-49 employees">15-49 employees (ADA/Title VII threshold)</option>
+                <option value="50-99 employees">50-99 employees (FMLA/ACA threshold)</option>
                 <option value="100+ employees">100+ employees</option>
               </select>
-              <p style={{ fontSize: '0.95rem', color: colors.grayLight, marginTop: '0.5rem', fontWeight: 500 }}>
-                ⚠️ Different laws apply at 15, 20, and 50 employee thresholds
-              </p>
             </div>
           </div>
           
+          {/* Submit Button */}
           <button
             onClick={() => setCurrentStep('questions')}
             disabled={!businessInfo.name.trim() || !businessInfo.industry || !businessInfo.size}
@@ -833,19 +872,32 @@ REQUIREMENTS:
               background: (businessInfo.name.trim() && businessInfo.industry && businessInfo.size) ? colors.primary : colors.darkCard,
               color: (businessInfo.name.trim() && businessInfo.industry && businessInfo.size) ? colors.white : colors.grayDark,
               border: 'none',
-              padding: '1rem',
-              fontSize: '1rem',
+              padding: '1.1rem',
+              fontSize: '1.05rem',
               fontWeight: 600,
               borderRadius: '8px',
               cursor: (businessInfo.name.trim() && businessInfo.industry && businessInfo.size) ? 'pointer' : 'not-allowed',
               fontFamily: 'inherit'
             }}
           >
-            Continue →
+            Start My Assessment →
           </button>
           
-          <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.7rem', color: colors.grayDark }}>
-            Questions? <a href="mailto:info@techshieldkc.com" style={{ color: colors.gray }}>info@techshieldkc.com</a>
+          {/* Helper text */}
+          {(!businessInfo.name.trim() || !businessInfo.industry || !businessInfo.size) && (
+            <p style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.85rem', color: colors.grayDark }}>
+              Please complete all fields to continue
+            </p>
+          )}
+          
+          {/* Privacy note */}
+          <p style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.85rem', color: colors.gray }}>
+            🔒 Your info stays private. We never sell data.
+          </p>
+          
+          {/* Questions link */}
+          <p style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.85rem', color: colors.grayDark }}>
+            Questions? <a href="mailto:info@techshieldkc.com" style={{ color: colors.primary, textDecoration: 'none' }}>info@techshieldkc.com</a>
           </p>
         </div>
       </div>
