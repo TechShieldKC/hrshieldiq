@@ -9,7 +9,6 @@ const HRShieldIQ = () => {
   const [loading, setLoading] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState('onetime');
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState('');
   const paypalRef = useRef(null);
@@ -100,65 +99,33 @@ const HRShieldIQ = () => {
     }
   }, [showPaywall, paymentComplete, businessInfo.email, paypalLoaded]);
 
-  useEffect(() => {
-    if (showPaywall && !paymentComplete && window.paypal && paypalLoaded && !paypalLoading) {
-      renderPayPalButton();
-    }
-  }, [selectedPlan]);
-
   const renderPayPalButton = () => {
     if (!paypalRef.current || !window.paypal) return;
     
     paypalRef.current.innerHTML = '';
     
-    if (selectedPlan === 'onetime') {
-      window.paypal.Buttons({
-        style: { layout: 'vertical', color: 'gold', shape: 'pill', label: 'paypal', height: 45 },
-        createOrder: (data, actions) => {
-          return actions.order.create({
-            purchase_units: [{
-              description: 'HRShieldIQ™ - HR Compliance Assessment Report',
-              amount: { value: '19.99' }
-            }]
-          });
-        },
-        onApprove: async (data, actions) => {
-          const order = await actions.order.capture();
-          console.log('Payment successful:', order);
-          setPaymentComplete(true);
-          setShowPaywall(false);
-          generateReport();
-        },
-        onError: (err) => {
-          console.error('PayPal error:', err);
-          alert('Payment failed. Please try again.');
-        }
-      }).render(paypalRef.current);
-    } else if (selectedPlan === 'annual') {
-      // Annual plan - 4 quarterly reports for $29.99/year
-      window.paypal.Buttons({
-        style: { layout: 'vertical', color: 'gold', shape: 'pill', label: 'paypal', height: 45 },
-        createOrder: (data, actions) => {
-          return actions.order.create({
-            purchase_units: [{
-              description: 'HRShieldIQ™ - Annual Plan (4 Quarterly Reports)',
-              amount: { value: '29.99' }
-            }]
-          });
-        },
-        onApprove: async (data, actions) => {
-          const order = await actions.order.capture();
-          console.log('Annual plan payment successful:', order);
-          setPaymentComplete(true);
-          setShowPaywall(false);
-          generateReport();
-        },
-        onError: (err) => {
-          console.error('PayPal error:', err);
-          alert('Payment failed. Please try again.');
-        }
-      }).render(paypalRef.current);
-    }
+    window.paypal.Buttons({
+      style: { layout: 'vertical', color: 'gold', shape: 'pill', label: 'paypal', height: 45 },
+      createOrder: (data, actions) => {
+        return actions.order.create({
+          purchase_units: [{
+            description: 'HRShieldIQ™ - HR Compliance Assessment Report',
+            amount: { value: '29.99' }
+          }]
+        });
+      },
+      onApprove: async (data, actions) => {
+        const order = await actions.order.capture();
+        console.log('Payment successful:', order);
+        setPaymentComplete(true);
+        setShowPaywall(false);
+        generateReport();
+      },
+      onError: (err) => {
+        console.error('PayPal error:', err);
+        alert('Payment failed. Please try again.');
+      }
+    }).render(paypalRef.current);
   };
 
   // HR-SPECIFIC CATEGORIES AND QUESTIONS
@@ -734,7 +701,7 @@ REQUIREMENTS:
               Start Free Assessment →
             </button>
             <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: colors.gray }}>
-              Free score preview. Full personalized report: <span style={{ color: colors.primary, fontWeight: 600 }}>$19.99</span>
+              Free score preview. Full personalized report: <span style={{ color: colors.primary, fontWeight: 600 }}>$29.99</span>
             </p>
             <a href="/sample-report.html" style={{ fontSize: '0.85rem', color: colors.grayLight, textDecoration: 'underline' }}>
               View a sample report
@@ -1246,62 +1213,9 @@ REQUIREMENTS:
               </div>
               
               {/* Plan Selection */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  {/* One-time option */}
-                  <button
-                    onClick={() => setSelectedPlan('onetime')}
-                    style={{
-                      flex: 1,
-                      background: selectedPlan === 'onetime' ? colors.primaryLight : colors.darkBg,
-                      border: `2px solid ${selectedPlan === 'onetime' ? colors.primary : colors.grayDark}`,
-                      borderRadius: '10px',
-                      padding: '1rem',
-                      cursor: 'pointer',
-                      textAlign: 'center'
-                    }}
-                  >
-                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: selectedPlan === 'onetime' ? colors.primary : colors.white }}>$19.99</div>
-                    <div style={{ fontSize: '0.8rem', color: colors.gray }}>One-time</div>
-                  </button>
-                  
-                  {/* Annual option */}
-                  <button
-                    onClick={() => setSelectedPlan('annual')}
-                    style={{
-                      flex: 1,
-                      background: selectedPlan === 'annual' ? colors.primaryLight : colors.darkBg,
-                      border: `2px solid ${selectedPlan === 'annual' ? colors.primary : colors.grayDark}`,
-                      borderRadius: '10px',
-                      padding: '1rem',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      position: 'relative'
-                    }}
-                  >
-                    <div style={{
-                      position: 'absolute',
-                      top: '-10px',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      background: '#22c55e',
-                      color: 'white',
-                      fontSize: '0.65rem',
-                      fontWeight: 600,
-                      padding: '2px 8px',
-                      borderRadius: '10px'
-                    }}>BEST VALUE</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: selectedPlan === 'annual' ? colors.primary : colors.white }}>$29.99</div>
-                    <div style={{ fontSize: '0.8rem', color: colors.gray }}>Annual</div>
-                    <div style={{ fontSize: '0.7rem', color: '#22c55e', marginTop: '0.25rem' }}>4 reports/year</div>
-                  </button>
-                </div>
-                
-                {selectedPlan === 'annual' && (
-                  <p style={{ fontSize: '0.75rem', color: colors.gray, textAlign: 'center', marginTop: '0.75rem' }}>
-                    Quarterly assessments with 5 new questions each time
-                  </p>
-                )}
+              <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: 700, color: colors.primary }}>$29.99</div>
+                <div style={{ fontSize: '0.9rem', color: colors.gray }}>One-time payment</div>
               </div>
               
               {/* PayPal */}
