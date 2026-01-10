@@ -11,6 +11,7 @@ const HRShieldIQ = () => {
   const [paymentComplete, setPaymentComplete] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState('');
+  const [activeTab, setActiveTab] = useState('business');
   const paypalRef = useRef(null);
 
   // Valid promo codes
@@ -540,184 +541,305 @@ REQUIREMENTS:
     input, select, button { font-family: inherit; }
   `;
 
-  // INTRO SCREEN
+  // INTRO SCREEN - Landing Page v2
   if (currentStep === 'intro') {
+    const audiences = {
+      business: { label: 'Small Business', stat: 'Employment lawsuits have increased 400%', subtext: 'over the past 20 years' },
+      healthcare: { label: 'Healthcare', stat: '19.5% employee turnover rate', subtext: 'with strict credentialing & training required' },
+      nonprofit: { label: 'Nonprofits', stat: '30% face labor violations annually', subtext: 'often from volunteer vs. employee confusion' },
+      restaurant: { label: 'Restaurant', stat: 'Wage & hour claims average $40,000', subtext: 'from tip credit and overtime miscalculations' }
+    };
+
     return (
-      <div style={baseStyles}>
+      <div style={{ minHeight: '100vh', backgroundColor: '#0a0a0a', color: '#e5e5e5', fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.6 }}>
         <style>{globalStyles}</style>
         
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-            <h1 style={{
-              fontSize: 'clamp(2rem, 5vw, 3rem)',
-              fontWeight: 700,
-              lineHeight: 1.1,
-              marginBottom: '0.75rem',
-              letterSpacing: '-0.02em'
-            }}>
-              HRShield<span style={{ color: colors.primary }}>IQ</span><span style={{ fontSize: '0.5em', verticalAlign: 'super' }}>™</span>
-            </h1>
-            
-            <p style={{
-              fontSize: '1.2rem',
-              color: colors.white,
-              maxWidth: '520px',
-              margin: '0 auto 0.5rem',
-              lineHeight: 1.4,
-              fontWeight: 500
-            }}>
-              Employment law compliance guidance for small businesses. <span style={{ color: colors.primary }}>Avoid costly mistakes.</span>
-            </p>
-            
-            <p style={{
-              fontSize: '1rem',
-              color: colors.grayLight,
-              maxWidth: '500px',
-              margin: '0.75rem auto 0',
-              lineHeight: 1.6
-            }}>
-              A 7-minute HR compliance assessment for <span style={{ color: colors.white, fontWeight: 500 }}>small businesses</span>, <span style={{ color: colors.white, fontWeight: 500 }}>nonprofits</span>, and <span style={{ color: colors.white, fontWeight: 500 }}>growing teams</span>. Answer simple questions, get a personalized report showing your compliance gaps and exactly how to fix them.
-            </p>
-          </div>
+        {/* Gradient */}
+        <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.08) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 0 }} />
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
           
-          {/* Quick Facts */}
-          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-              gap: '0.5rem 1.5rem',
-              marginBottom: '0.5rem'
-            }}>
-              {[
-                '7 minutes',
-                '25 questions',
-                'The cost of lunch',
-                '📱 Works great on mobile'
-              ].map((item, i) => (
-                <span key={i} style={{ fontSize: '1rem', color: colors.grayLight }}>
-                  <span style={{ color: colors.primary, marginRight: '0.4rem', fontWeight: 600 }}>✓</span>{item}
-                </span>
+          {/* Hero */}
+          <section style={{ padding: '60px 24px 48px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+            
+            <h1 style={{ fontSize: 'clamp(2.5rem, 12vw, 3.5rem)', fontWeight: 700, marginBottom: '16px', letterSpacing: '-0.02em' }}>
+              <span style={{ color: '#fff' }}>HRShield</span>
+              <span style={{ color: colors.primary }}>IQ</span>
+              <span style={{ color: colors.primary, fontSize: '0.5em', verticalAlign: 'super' }}>™</span>
+            </h1>
+
+            <p style={{ fontSize: '1.2rem', color: '#999', marginBottom: '8px' }}>
+              Before you spend $10,000 on an HR audit,
+            </p>
+            <p style={{ fontSize: '1.2rem', color: '#fff', marginBottom: '28px' }}>
+              spend <span style={{ color: colors.primary, fontWeight: 600 }}>7 minutes</span> finding out what you actually need.
+            </p>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', marginBottom: '8px', fontSize: '1rem', color: '#666' }}>
+              <span>✓ 7 min</span>
+              <span>✓ 25 questions</span>
+              <span>✓ DOL & EEOC</span>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: '#444', marginBottom: '28px' }}>
+              (Department of Labor & Equal Employment Opportunity Commission)
+            </p>
+
+            {/* Tabs */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', marginBottom: '20px' }}>
+              {Object.entries(audiences).map(([key, val]) => (
+                <button key={key} onClick={() => setActiveTab(key)} style={{ padding: '10px 16px', fontSize: '0.95rem', fontWeight: 500, backgroundColor: activeTab === key ? colors.primary : 'transparent', color: activeTab === key ? '#fff' : '#666', border: activeTab === key ? 'none' : '1px solid #333', borderRadius: '20px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  {val.label}
+                </button>
               ))}
             </div>
-            <p style={{ fontSize: '0.95rem', color: colors.gray, marginBottom: '0.25rem' }}>
-              Questions informed by <span style={{ color: colors.white }}>DOL</span>, <span style={{ color: colors.white }}>EEOC</span>, & <span style={{ color: colors.white }}>SHRM</span> guidelines
-            </p>
-            <p style={{ fontSize: '0.75rem', color: colors.grayDark, maxWidth: '500px', margin: '0 auto', lineHeight: 1.5 }}>
-              DOL (Department of Labor) enforces wage & hour laws. EEOC (Equal Employment Opportunity Commission) handles discrimination. SHRM (Society for Human Resource Management) sets HR best practices.
-            </p>
-          </div>
-          
-          {/* Stat Callout */}
-          <div style={{
-            background: colors.darkCard,
-            borderRadius: '12px',
-            padding: '1.5rem',
-            marginBottom: '0.75rem',
-            textAlign: 'center',
-            borderLeft: `4px solid ${colors.primary}`
-          }}>
-            <p style={{ fontSize: '1.1rem', color: colors.white, marginBottom: '0.75rem', lineHeight: 1.5 }}>
-              <strong style={{ color: colors.primary }}>Employment lawsuits have increased 400%</strong> over the past 20 years. Most small businesses don't know they're at risk.
-            </p>
-            <p style={{ fontSize: '1.15rem', color: colors.white, fontWeight: 600, lineHeight: 1.4 }}>
-              Find your compliance gaps in <span style={{ color: colors.primary }}>7 minutes</span> with our HR IQ Test.
-            </p>
-          </div>
-          
-          {/* Value Prop */}
-          <p style={{ textAlign: 'center', fontSize: '1rem', color: colors.gray, marginBottom: '2rem', lineHeight: 1.5 }}>
-            HR audits from consultants cost $3,000-$10,000+. <span style={{ color: colors.grayLight }}>HRShieldIQ delivers clarity without the consultant price tag.</span>
-          </p>
-          
-          {/* What You'll Get */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-            gap: '1rem',
-            marginBottom: '2rem'
-          }}>
-            {[
-              { icon: '🎯', title: 'Find Gaps', items: ['Hiring practices', 'Handbook policies', 'Wage & hour', 'Documentation', 'Termination'] },
-              { icon: '📊', title: 'Understand Risk', items: ['Plain English', 'Penalty amounts', 'Industry context', 'Why it matters', 'Real examples'] },
-              { icon: '✅', title: 'Action Plan', items: ['Prioritized fixes', 'Step-by-step', '30-day roadmap', 'Quick wins first', 'Time estimates'] },
-              { icon: '🔗', title: 'Resources', items: ['DOL guides', 'EEOC resources', 'State-specific', 'Form templates', 'Best practices'] }
-            ].map((card, idx) => (
-              <div key={idx} style={{
-                background: colors.darkCard,
-                borderRadius: '10px',
-                padding: '1.25rem',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>{card.icon}</div>
-                <div style={{ fontWeight: 600, color: colors.white, fontSize: '1rem', marginBottom: '0.75rem' }}>{card.title}</div>
-                <div style={{ fontSize: '0.9rem', color: colors.gray, lineHeight: 1.8, textAlign: 'center' }}>
-                  {card.items.map((item, i) => (
-                    <div key={i}><span style={{ color: colors.primary }}>✓</span> {item}</div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {/* Educational Notice */}
-          <div style={{
-            background: colors.primaryLight,
-            border: `1px solid ${colors.primaryBorder}`,
-            borderRadius: '10px',
-            padding: '1rem 1.25rem',
-            marginBottom: '2rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem'
-          }}>
-            <span style={{ fontSize: '1rem', flexShrink: 0 }}>📋</span>
-            <p style={{ color: colors.grayLight, fontSize: '0.95rem', lineHeight: 1.5 }}>
-              <strong style={{ color: colors.primary }}>Educational guidance only.</strong> This assessment helps identify potential gaps but is not legal advice or HR certification.
-            </p>
-          </div>
-          
-          {/* CTA */}
-          <div style={{ textAlign: 'center' }}>
-            <button
-              onClick={() => setCurrentStep('business')}
-              style={{
-                background: colors.primary,
-                color: colors.white,
-                border: 'none',
-                padding: '1rem 2.5rem',
-                fontSize: '1.05rem',
-                fontWeight: 600,
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                transition: 'all 0.2s ease',
-                boxShadow: `0 4px 20px ${colors.primary}40`
-              }}
-              onMouseOver={e => e.target.style.transform = 'translateY(-2px)'}
-              onMouseOut={e => e.target.style.transform = 'translateY(0)'}
-            >
+
+            {/* Stat box */}
+            <div style={{ backgroundColor: 'rgba(37,99,235,0.08)', borderLeft: `4px solid ${colors.primary}`, borderRadius: '8px', padding: '20px 24px', textAlign: 'center', marginBottom: '32px' }}>
+              <p style={{ fontSize: '1.15rem', margin: 0, lineHeight: 1.6 }}>
+                <span style={{ color: colors.primary, fontWeight: 600 }}>{audiences[activeTab].stat}</span>
+                <span style={{ color: '#888' }}>, {audiences[activeTab].subtext}.</span>
+              </p>
+            </div>
+
+            <button onClick={() => setCurrentStep('business')} style={{ display: 'inline-block', backgroundColor: colors.primary, color: '#fff', padding: '18px 40px', fontSize: '1.15rem', fontWeight: 600, borderRadius: '8px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(37,99,235,0.3)', fontFamily: 'inherit' }}>
               Start Free Assessment →
             </button>
-            <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: colors.gray }}>
-              Free score preview. Full personalized report: <span style={{ color: colors.primary, fontWeight: 600 }}>$29.99</span>
+            <p style={{ fontSize: '1rem', color: '#555', marginTop: '16px' }}>
+              Free score preview • Full report: <span style={{ color: colors.primary }}>$29.99</span>
             </p>
-            <a href="/sample-report.html" style={{ fontSize: '0.85rem', color: colors.grayLight, textDecoration: 'underline' }}>
-              View a sample report
+          </section>
+
+          {/* Problem */}
+          <section style={{ padding: '48px 24px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>
+              The problem with "experts"
+            </h2>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
+              {[
+                '💰 HR consultants charge $150-300/hour',
+                '⚖️ Attorneys bill for questions you could answer',
+                '📋 You don\'t know what you don\'t know'
+              ].map((item, i) => (
+                <div key={i} style={{ backgroundColor: '#141414', borderRadius: '8px', padding: '16px 20px', fontSize: '1.1rem', color: '#999', border: '1px solid #1a1a1a', textAlign: 'center' }}>
+                  {item}
+                </div>
+              ))}
+            </div>
+
+            <p style={{ fontSize: '1.2rem', color: '#fff' }}>
+              What if you knew <span style={{ color: colors.primary }}>where you stand</span> first?
+            </p>
+          </section>
+
+          {/* Credibility - MOVED HERE after Problem */}
+          <section style={{ padding: '48px 24px', backgroundColor: '#0f0f0f' }}>
+            <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>
+                Built on real standards
+              </h2>
+              
+              <div style={{ backgroundColor: '#141414', borderRadius: '12px', padding: '24px', border: '1px solid #252525', marginBottom: '16px' }}>
+                <p style={{ fontSize: '1.05rem', color: '#ccc', lineHeight: 1.7, margin: 0 }}>
+                  Built on <span style={{ color: colors.primary, fontWeight: 600 }}>DOL guidelines</span>, <span style={{ color: colors.primary, fontWeight: 600 }}>EEOC requirements</span>, and <span style={{ color: colors.primary, fontWeight: 600 }}>SHRM best practices</span>—the same standards employment attorneys and HR professionals use.
+                </p>
+              </div>
+              
+              <div style={{ backgroundColor: '#141414', borderRadius: '12px', padding: '24px', border: '1px solid #252525' }}>
+                <p style={{ fontSize: '1.05rem', color: '#ccc', lineHeight: 1.7, margin: 0 }}>
+                  Created by a <span style={{ color: '#fff', fontWeight: 500 }}>20-year IT operations veteran</span> who has managed HR compliance across 150+ locations and led teams through audits, acquisitions, and organizational change.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Features - NO background */}
+          <section style={{ padding: '48px 24px' }}>
+            <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '28px' }}>
+                Your report includes
+              </h2>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                {[
+                  { icon: '🎯', title: 'Find Gaps', items: 'Hiring, handbook, wage & hour, docs' },
+                  { icon: '📊', title: 'Understand Risk', items: 'Plain English, penalty amounts' },
+                  { icon: '✅', title: 'Action Plan', items: '30-day roadmap, time estimates' },
+                  { icon: '🔗', title: 'Resources', items: 'DOL, EEOC, SHRM guides' }
+                ].map((card, i) => (
+                  <div key={i} style={{ backgroundColor: '#1a1a1a', borderRadius: '10px', padding: '20px', border: '1px solid #252525', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.75rem', marginBottom: '10px' }}>{card.icon}</div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#fff', marginBottom: '8px' }}>{card.title}</h3>
+                    <p style={{ fontSize: '0.95rem', color: '#666', margin: 0, lineHeight: 1.5 }}>{card.items}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Sample Report */}
+          <section style={{ padding: '48px 24px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>
+              Sample report preview
+            </h2>
+
+            <div style={{ backgroundColor: '#141414', borderRadius: '12px', padding: '24px', border: '1px solid #252525' }}>
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: 700, color: colors.primary }}>
+                  324<span style={{ fontSize: '1rem', color: '#666' }}>/500</span>
+                </div>
+                <span style={{ backgroundColor: 'rgba(37,99,235,0.2)', color: colors.primary, padding: '4px 12px', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 600 }}>ELEVATED RISK</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginBottom: '20px', fontSize: '1rem' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e74c3c' }}>4</div>
+                  <div style={{ color: '#666', fontSize: '0.85rem' }}>Critical</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f39c12' }}>6</div>
+                  <div style={{ color: '#666', fontSize: '0.85rem' }}>Attention</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#27ae60' }}>15</div>
+                  <div style={{ color: '#666', fontSize: '0.85rem' }}>Good</div>
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: '#1a1a1a', borderRadius: '8px', padding: '16px', marginBottom: '16px', textAlign: 'left' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ color: '#e74c3c', fontWeight: 600, fontSize: '1rem' }}>🔴 I-9s Stored in Personnel Files</span>
+                  <span style={{ backgroundColor: '#e74c3c', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>CRITICAL</span>
+                </div>
+                <p style={{ color: '#888', fontSize: '0.95rem', margin: 0 }}>
+                  Fix: Create separate I-9 folder. <span style={{ color: colors.primary }}>⏱️ 1-2 hours</span>
+                </p>
+              </div>
+
+              <div style={{ backgroundColor: '#1a1a1a', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
+                <p style={{ color: '#fff', fontWeight: 600, fontSize: '1rem', margin: '0 0 12px' }}>🎯 30-Day Action Plan</p>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {['Separate I-9s', 'Update handbook', 'Review classifications'].map((item, i) => (
+                    <span key={i} style={{ backgroundColor: '#252525', color: '#888', padding: '6px 12px', borderRadius: '6px', fontSize: '0.9rem' }}>{item}</span>
+                  ))}
+                  <span style={{ color: colors.primary, fontSize: '0.9rem', padding: '6px' }}>+12 more</span>
+                </div>
+              </div>
+            </div>
+
+            <a href="/sample-report.html" target="_blank" style={{ display: 'inline-block', color: colors.primary, marginTop: '20px', fontSize: '1rem', textDecoration: 'none' }}>
+              View full sample →
             </a>
+          </section>
+
+          {/* Price Comparison */}
+          <section style={{ padding: '48px 24px', backgroundColor: '#0f0f0f' }}>
+            <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '28px' }}>
+                The math
+              </h2>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                <div style={{ backgroundColor: '#1a1a1a', borderRadius: '10px', padding: '20px 12px', border: '1px solid #252525' }}>
+                  <p style={{ color: '#555', fontSize: '0.9rem', margin: '0 0 8px' }}>HR Audit</p>
+                  <p style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 700, margin: '0 0 8px' }}>$10,000+</p>
+                  <p style={{ color: '#444', fontSize: '0.85rem', margin: 0 }}>4-8 weeks</p>
+                </div>
+                <div style={{ backgroundColor: '#1a1a1a', borderRadius: '10px', padding: '20px 12px', border: '1px solid #252525' }}>
+                  <p style={{ color: '#555', fontSize: '0.9rem', margin: '0 0 8px' }}>Ignore it</p>
+                  <p style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 700, margin: '0 0 8px' }}>$0</p>
+                  <p style={{ color: '#444', fontSize: '0.85rem', margin: 0 }}>Until lawsuit</p>
+                </div>
+                <div style={{ backgroundColor: 'rgba(37,99,235,0.1)', borderRadius: '10px', padding: '20px 12px', border: `2px solid ${colors.primary}`, position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', backgroundColor: colors.primary, color: '#fff', padding: '3px 10px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>SMART</div>
+                  <p style={{ color: colors.primary, fontSize: '0.9rem', margin: '0 0 8px' }}>HRShieldIQ</p>
+                  <p style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 700, margin: '0 0 8px' }}>$29.99</p>
+                  <p style={{ color: '#888', fontSize: '0.85rem', margin: 0 }}>7 minutes</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* What It Is */}
+          <section style={{ padding: '48px 24px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>
+              What this is
+            </h2>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', fontSize: '1rem' }}>
+              <div>
+                <p style={{ color: '#27ae60', fontWeight: 600, marginBottom: '12px', fontSize: '1.1rem' }}>✓ IS</p>
+                {['Clarity before spending', 'Prioritized roadmap', 'Smart first step'].map((item, i) => (
+                  <p key={i} style={{ color: '#888', margin: '8px 0' }}>{item}</p>
+                ))}
+              </div>
+              <div>
+                <p style={{ color: '#e74c3c', fontWeight: 600, marginBottom: '12px', fontSize: '1.1rem' }}>✗ IS NOT</p>
+                {['Legal advice', 'HR certification', 'Attorney replacement'].map((item, i) => (
+                  <p key={i} style={{ color: '#555', margin: '8px 0' }}>{item}</p>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* FAQ - WITH background, centered text */}
+          <section style={{ padding: '48px 24px', backgroundColor: '#0f0f0f' }}>
+            <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>
+                FAQ
+              </h2>
+
+              {[
+                { q: 'Will this make me compliant?', a: 'No. It shows where you stand so you can decide what to do.' },
+                { q: "I'm not an HR expert. Will I understand?", a: 'Yes. Plain English, yes/no questions, no jargon.' },
+                { q: 'Replacement for an attorney?', a: "It's what you do before calling one." },
+                { q: 'How long does it take?', a: '7 minutes. Report generates instantly.' }
+              ].map((faq, i) => (
+                <div key={i} style={{ borderBottom: '1px solid #252525', padding: '20px 0', textAlign: 'center' }}>
+                  <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600, marginBottom: '8px' }}>{faq.q}</h3>
+                  <p style={{ color: '#666', fontSize: '1rem', margin: 0, lineHeight: 1.6 }}>{faq.a}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Final CTA */}
+          <section style={{ padding: '60px 24px', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 600, color: '#fff', marginBottom: '16px', lineHeight: 1.4 }}>
+              You'll find out where you stand eventually.
+            </h2>
+            <p style={{ fontSize: '1.1rem', color: '#888', marginBottom: '32px', lineHeight: 1.6 }}>
+              On <strong style={{ color: '#fff' }}>your terms</strong>, or when the DOL comes knocking.
+            </p>
+
+            <button onClick={() => setCurrentStep('business')} style={{ display: 'inline-block', backgroundColor: colors.primary, color: '#fff', padding: '18px 40px', fontSize: '1.15rem', fontWeight: 600, borderRadius: '8px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 24px rgba(37,99,235,0.35)', fontFamily: 'inherit' }}>
+              Start Free Assessment →
+            </button>
+            
+            <p style={{ fontSize: '1rem', color: '#555', marginTop: '16px' }}>
+              Free preview • Full report: <span style={{ color: colors.primary, fontWeight: 600 }}>$29.99</span> • 7 min
+            </p>
+          </section>
+
+          {/* Disclaimer */}
+          <div style={{ padding: '20px 24px', backgroundColor: 'rgba(37,99,235,0.05)', borderTop: '1px solid rgba(37,99,235,0.1)', textAlign: 'center' }}>
+            <p style={{ maxWidth: '600px', margin: '0 auto', fontSize: '0.9rem', color: '#555' }}>
+              <span style={{ color: colors.primary }}>📋</span> Educational guidance only. Not a compliance certification or legal advice.
+            </p>
           </div>
-          
+
           {/* Footer */}
-          <div style={{ marginTop: '3rem', paddingTop: '1.5rem', borderTop: `1px solid ${colors.grayDark}22`, textAlign: 'center' }}>
-            <p style={{ fontSize: '0.75rem', color: colors.grayDark }}>
-              Powered by <a href="https://techshieldkc.com" style={{ color: colors.gray, textDecoration: 'none' }}>TechShield </a><a href="https://techshieldkc.com" style={{ color: colors.primary, textDecoration: 'none' }}>KC LLC</a>
+          <footer style={{ padding: '32px 24px', textAlign: 'center', borderTop: '1px solid #1a1a1a' }}>
+            <p style={{ fontSize: '1rem', marginBottom: '8px' }}>
+              <span style={{ color: '#fff' }}>TechShield</span> <span style={{ color: colors.primary }}>KC LLC</span>
             </p>
-            <p style={{ fontSize: '0.7rem', marginTop: '0.5rem' }}>
-              <a href="/privacy.html" style={{ color: colors.grayDark, textDecoration: 'none', marginRight: '1rem' }}>Privacy Policy</a>
-              <a href="/terms.html" style={{ color: colors.grayDark, textDecoration: 'none' }}>Terms of Service</a>
+            <p style={{ fontSize: '0.9rem', color: '#444' }}>
+              <a href="/privacy.html" style={{ color: '#444', marginRight: '16px', textDecoration: 'none' }}>Privacy</a>
+              <a href="/terms.html" style={{ color: '#444', textDecoration: 'none' }}>Terms</a>
             </p>
-          </div>
+            <p style={{ fontSize: '0.85rem', color: '#333', marginTop: '12px' }}>© 2026 HRShieldIQ™</p>
+          </footer>
+
         </div>
       </div>
     );
