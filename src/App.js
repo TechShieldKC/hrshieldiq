@@ -120,7 +120,7 @@ const HRShieldIQ = () => {
         console.log('Payment successful:', order);
         setPaymentComplete(true);
         setShowPaywall(false);
-        generateReport();
+        generateReport(true);
       },
       onError: (err) => {
         console.error('PayPal error:', err);
@@ -347,10 +347,12 @@ const HRShieldIQ = () => {
   const [reportReady, setReportReady] = useState(false);
   const [pendingReport, setPendingReport] = useState(null);
 
-  const generateReport = async () => {
-    if (reportReady && pendingReport) {
+  const generateReport = async (isPaid = false) => {
+    // If payment just completed and report is ready, show it immediately
+    if ((isPaid || paymentComplete) && reportReady && pendingReport) {
       setReport(pendingReport);
       setCurrentStep('report');
+      setLoading(false);
       return;
     }
     
@@ -362,10 +364,10 @@ const HRShieldIQ = () => {
     setLoading(true);
     setShowPaywall(false);
     
-    await generateReportAPI();
+    await generateReportAPI(isPaid);
   };
 
-  const generateReportAPI = async () => {
+  const generateReportAPI = async (isPaid = false) => {
     setReportGenerating(true);
     
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -484,7 +486,7 @@ REQUIREMENTS:
         };
       }
       
-      if (paymentComplete) {
+      if (isPaid || paymentComplete) {
         setReport(reportData);
         setCurrentStep('report');
       } else {
@@ -512,7 +514,7 @@ REQUIREMENTS:
         actionPlan: { week1: ['Review report'], week2to4: ['Implement changes'], ongoing: ['Annual review'] }
       };
       
-      if (paymentComplete) {
+      if (isPaid || paymentComplete) {
         setReport(fallbackReport);
         setCurrentStep('report');
       } else {
@@ -1365,7 +1367,7 @@ REQUIREMENTS:
                       if (validPromoCodes.includes(promoCode)) {
                         setPaymentComplete(true);
                         setShowPaywall(false);
-                        generateReport();
+                        generateReport(true);
                       } else {
                         setPromoError('Invalid code');
                       }
