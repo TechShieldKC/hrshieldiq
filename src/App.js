@@ -675,7 +675,7 @@ CRITICAL REQUIREMENTS:
               
               <div style={{ backgroundColor: '#141414', borderRadius: '12px', padding: '24px', border: '1px solid #252525' }}>
                 <p style={{ fontSize: '1.05rem', color: '#ccc', lineHeight: 1.7, margin: 0 }}>
-                  Created by a <span style={{ color: '#fff', fontWeight: 500 }}>20-year IT operations veteran</span> who has managed HR compliance across 150+ locations and led teams through audits, acquisitions, and organizational change.
+                  Built by an <span style={{ color: '#fff', fontWeight: 500 }}>IT Director who spent 20 years managing HR compliance</span> across 150+ locations. Vetted by a <span style={{ color: '#fff', fontWeight: 500 }}>healthcare HR executive</span> who's lived this stuff.
                 </p>
               </div>
             </div>
