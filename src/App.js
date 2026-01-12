@@ -675,7 +675,7 @@ CRITICAL REQUIREMENTS:
               
               <div style={{ backgroundColor: '#141414', borderRadius: '12px', padding: '24px', border: '1px solid #252525' }}>
                 <p style={{ fontSize: '1.05rem', color: '#ccc', lineHeight: 1.7, margin: 0 }}>
-                  Built by an <span style={{ color: '#fff', fontWeight: 500 }}>IT Director who spent 20 years managing HR compliance</span> across 150+ locations. Vetted by a <span style={{ color: '#fff', fontWeight: 500 }}>healthcare HR executive</span> who's lived this stuff.
+                  Built by an <span style={{ color: '#fff', fontWeight: 500 }}>IT Director who spent 20 years managing HR compliance</span> across 150+ locations. Vetted by a <span style={{ color: '#fff', fontWeight: 500 }}>healthcare HR VP</span> who's lived this stuff.
                 </p>
               </div>
             </div>
@@ -810,7 +810,7 @@ CRITICAL REQUIREMENTS:
             </div>
           </section>
 
-          {/* FAQ - WITH background, centered text */}
+          {/* FAQ - WITH background, centered text - UPDATED 5 QUESTIONS */}
           <section style={{ padding: '48px 24px', backgroundColor: '#0f0f0f' }}>
             <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>
@@ -818,10 +818,11 @@ CRITICAL REQUIREMENTS:
               </h2>
 
               {[
-                { q: 'Will this make me compliant?', a: 'No. It shows where you stand so you can decide what to do.' },
-                { q: "I'm not an HR expert. Will I understand?", a: 'Yes. Plain English, yes/no questions, no jargon.' },
-                { q: 'Replacement for an attorney?', a: "It's what you do before calling one." },
-                { q: 'How long does it take?', a: '7 minutes. Report generates instantly.' }
+                { q: "I'm not an HR expert. Will I understand this?", a: "If you can answer yes, no, or not sure, you can do this. Plain English questions, clear next steps in the report." },
+                { q: "Isn't this just a free checklist?", a: "Free checklists tell you WHAT to check. Our AI report tells you WHERE you're vulnerable and HOW to prioritize based on YOUR answers. That's a consultant's job." },
+                { q: "What if I don't have time right now?", a: "7 minutes. Start today, finish tomorrow. Your access never expires. Report generates instantly when done." },
+                { q: "Is my business too small for this?", a: "If you have employees, you have risk. Small businesses are the #1 target precisely BECAUSE they think they're too small to matter." },
+                { q: "How is this different from hiring a consultant?", a: "Consultants charge $5,000+ and take weeks. This gives you 80% of that value in 7 minutes for $29.99. For most small businesses, that's enough to find and prioritize your biggest gaps." }
               ].map((faq, i) => (
                 <div key={i} style={{ borderBottom: '1px solid #252525', padding: '20px 0', textAlign: 'center' }}>
                   <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600, marginBottom: '8px' }}>{faq.q}</h3>
