@@ -589,7 +589,8 @@ For questions: info@techshieldkc.com
   const [pendingReport, setPendingReport] = useState(null);
 
   const startBackgroundReportGeneration = async () => {
-    if (reportGenerating || reportReady) return;
+    if (reportGenerating) return null;
+    if (reportReady && pendingReport) return pendingReport;
     console.log('Starting background report generation...');
     setReportGenerating(true);
     
@@ -683,6 +684,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
       console.log('Background report ready!');
       setPendingReport(reportData);
       setReportReady(true);
+      return reportData;
       
     } catch (error) {
       console.error('Background report error:', error);
@@ -706,6 +708,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
       };
       setPendingReport(fallbackReport);
       setReportReady(true);
+      return fallbackReport;
     } finally {
       setReportGenerating(false);
     }
@@ -716,6 +719,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
       console.log('Using pre-generated report');
       setReport(pendingReport);
       setCurrentStep('report');
+      setLoading(false);
       if (businessInfo.email) {
         sendReportEmail(businessInfo.email, pendingReport);
       }
@@ -723,7 +727,27 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
     }
     
     setLoading(true);
-    await startBackgroundReportGeneration();
+    const generatedReport = await startBackgroundReportGeneration();
+    
+    // Use the returned report data directly (avoids closure issues with state)
+    if (generatedReport) {
+      console.log('Report generated, transitioning to report screen');
+      setReport(generatedReport);
+      setCurrentStep('report');
+      setLoading(false);
+      if (businessInfo.email) {
+        sendReportEmail(businessInfo.email, generatedReport);
+      }
+    } else if (pendingReport) {
+      // If startBackgroundReportGeneration returned null but pendingReport exists, use it
+      console.log('Using existing pending report');
+      setReport(pendingReport);
+      setCurrentStep('report');
+      setLoading(false);
+      if (businessInfo.email) {
+        sendReportEmail(businessInfo.email, pendingReport);
+      }
+    }
   };
 
   // Start background generation when all questions answered
