@@ -4,18 +4,81 @@ const HRShieldIQ = () => {
   const [currentStep, setCurrentStep] = useState('intro');
   const [currentCategory, setCurrentCategory] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [businessInfo, setBusinessInfo] = useState({ name: '', industry: '', size: '', state: '', email: '' });
+  const [businessInfo, setBusinessInfo] = useState({ name: '', industry: '', size: '', email: '' });
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState('onetime');
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState(0);
+  const [discountedPrice, setDiscountedPrice] = useState(29.99);
   const [activeTab, setActiveTab] = useState('business');
+  const [reportSaved, setReportSaved] = useState(false);
+  const [showSaveReminder, setShowSaveReminder] = useState(false);
   const paypalRef = useRef(null);
+  const [hasStoredReport, setHasStoredReport] = useState(false);
+  const [printPrompted, setPrintPrompted] = useState(false);
 
-  // Valid promo codes
-  const validPromoCodes = ['FAMILYFREE', 'TECHSHIELD2026', 'VIPACCESS', 'HRCHECK50', 'KCBIZ50'];
+  // Check for stored report on initial load
+  useEffect(() => {
+    const storedReport = localStorage.getItem('hrshieldiq_report');
+    const storedBusiness = localStorage.getItem('hrshieldiq_business');
+    if (storedReport && storedBusiness) {
+      try {
+        const parsedReport = JSON.parse(storedReport);
+        const parsedBusiness = JSON.parse(storedBusiness);
+        setReport(parsedReport);
+        setBusinessInfo(parsedBusiness);
+        setPaymentComplete(true);
+        setHasStoredReport(true);
+        console.log('Found stored report for:', parsedBusiness.name);
+      } catch (e) {
+        console.log('Error parsing stored report');
+        localStorage.removeItem('hrshieldiq_report');
+        localStorage.removeItem('hrshieldiq_business');
+      }
+    }
+  }, []);
+
+  // Auto-prompt print dialog when report loads (first time only)
+  useEffect(() => {
+    if (currentStep === 'report' && report && !printPrompted) {
+      setPrintPrompted(true);
+      setTimeout(() => {
+        const shouldPrint = window.confirm(
+          '📄 Save your report as PDF?\n\nClick OK to open the print dialog (choose "Save as PDF" as your printer).\n\nClick Cancel to view the report first.'
+        );
+        if (shouldPrint) {
+          const downloadBtn = document.querySelector('[data-download-pdf]');
+          if (downloadBtn) downloadBtn.click();
+        }
+      }, 500);
+    }
+  }, [currentStep, report, printPrompted]);
+
+  // Save report to localStorage when generated
+  useEffect(() => {
+    if (report && businessInfo.email && currentStep === 'report') {
+      localStorage.setItem('hrshieldiq_report', JSON.stringify(report));
+      localStorage.setItem('hrshieldiq_business', JSON.stringify(businessInfo));
+      console.log('Report saved to localStorage');
+    }
+  }, [report, businessInfo, currentStep]);
+
+  // Warn before leaving if report not saved
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (currentStep === 'report' && !reportSaved) {
+        e.preventDefault();
+        e.returnValue = 'Your report may not be saved. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [currentStep, reportSaved]);
 
   // HRShieldIQ Brand Colors - Blue theme
   const colors = {
@@ -32,10 +95,20 @@ const HRShieldIQ = () => {
     grayDark: '#525252'
   };
 
+  // Sanitize user input to prevent XSS
+  const escapeHtml = (str) => {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
   // Simple markdown to HTML converter
   const markdownToHtml = (markdown) => {
     if (!markdown) return '';
-    
     let html = markdown
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -54,43 +127,46 @@ const HRShieldIQ = () => {
       })
       .replace(/\n\n/g, '</p><p style="margin: 1rem 0; line-height: 1.7;">')
       .replace(/\n/g, '<br>');
-    
     html = '<p style="margin: 1rem 0; line-height: 1.7;">' + html + '</p>';
     html = html.replace(/<p[^>]*><\/p>/g, '');
     html = html.replace(/<p[^>]*><br><\/p>/g, '');
-    
     return html;
   };
 
   // Scroll to top whenever step or category changes
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
   }, [currentStep, currentCategory]);
 
   const [paypalLoading, setPaypalLoading] = useState(false);
-  const [paypalSdkReady, setPaypalSdkReady] = useState(false);
+  const [paypalSdkType, setPaypalSdkType] = useState(null);
+  const neededSdkType = selectedPlan === 'onetime' ? 'onetime' : 'subscription';
 
   // Load PayPal SDK and render button when paywall opens
   useEffect(() => {
     if (showPaywall && !paymentComplete && businessInfo.email && businessInfo.email.includes('@')) {
-      if (!paypalSdkReady) {
+      if (paypalSdkType !== neededSdkType) {
         setPaypalLoading(true);
-        
-        // Remove any existing PayPal scripts
         const existingScripts = document.querySelectorAll('script[src*="paypal.com/sdk"]');
         existingScripts.forEach(s => s.remove());
         window.paypal = undefined;
         
-        // Load PayPal SDK
         const script = document.createElement('script');
         const clientId = 'ATtOAGgoUaBRiQSclDhG6I7ER_KhNPgWGs3WUJYgs1fIUw4htpDW0d8NRCzehPkLxTNNBorisya_-NaK';
-        script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
+        
+        if (neededSdkType === 'onetime') {
+          script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
+        } else {
+          script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&vault=true&intent=subscription`;
+        }
         
         script.async = true;
         script.onload = () => {
-          setPaypalSdkReady(true);
+          setPaypalSdkType(neededSdkType);
           setPaypalLoading(false);
-          setTimeout(() => renderPayPalButton(), 100);
+          renderPayPalButton();
         };
         script.onerror = () => {
           setPaypalLoading(false);
@@ -101,51 +177,69 @@ const HRShieldIQ = () => {
         renderPayPalButton();
       }
     }
-  }, [showPaywall, paymentComplete, businessInfo.email, paypalSdkReady]);
+  }, [showPaywall, paymentComplete, businessInfo.email, neededSdkType, paypalSdkType]);
 
-  // Re-render button when paywall reopens
   useEffect(() => {
-    if (showPaywall && !paymentComplete && window.paypal && paypalSdkReady && !paypalLoading) {
-      setTimeout(() => renderPayPalButton(), 100);
+    if (showPaywall && !paymentComplete && window.paypal && paypalSdkType === neededSdkType && !paypalLoading) {
+      renderPayPalButton();
     }
-  }, [showPaywall]);
+  }, [selectedPlan, discountedPrice]);
 
   const renderPayPalButton = () => {
     if (!paypalRef.current || !window.paypal) return;
-    
     paypalRef.current.innerHTML = '';
     
-    window.paypal.Buttons({
-      style: { 
-        layout: 'vertical', 
-        color: 'gold', 
-        shape: 'pill', 
-        label: 'paypal', 
-        height: 45 
-      },
-      createOrder: (data, actions) => {
-        return actions.order.create({
-          purchase_units: [{
-            description: 'HRShieldIQ™ - HR Compliance Assessment Report',
-            amount: { value: '29.99' }
-          }]
-        });
-      },
-      onApprove: async (data, actions) => {
-        const order = await actions.order.capture();
-        console.log('Payment successful:', order);
-        console.log('Customer email:', businessInfo.email);
-        console.log('Business name:', businessInfo.name);
-        console.log('Transaction ID:', order.id);
-        setPaymentComplete(true);
-        setShowPaywall(false);
-        generateReport(true);
-      },
-      onError: (err) => {
-        console.error('PayPal error:', err);
-        alert('Payment failed. Please try again.');
-      }
-    }).render(paypalRef.current);
+    const subscriptionPlanIds = {
+      'quarterly': 'P-8KM41655M19557031NFO7YKY',
+      'annual': 'P-3CG228805F156324BNFO737I'
+    };
+    
+    if (selectedPlan === 'onetime') {
+      window.paypal.Buttons({
+        style: { layout: 'vertical', color: 'gold', shape: 'pill', label: 'paypal', height: 45 },
+        createOrder: (data, actions) => {
+          return actions.order.create({
+            purchase_units: [{
+              description: 'HRShieldIQ™ - HR Compliance Assessment Report',
+              amount: { value: discountedPrice.toFixed(2) }
+            }]
+          });
+        },
+        onApprove: async (data, actions) => {
+          const order = await actions.order.capture();
+          console.log('Payment successful:', order);
+          console.log('Customer email:', businessInfo.email);
+          console.log('Business name:', businessInfo.name);
+          console.log('Plan:', 'onetime');
+          console.log('Transaction ID:', order.id);
+          setPaymentComplete(true);
+          setShowPaywall(false);
+          generateReport();
+        },
+        onError: (err) => {
+          console.error('PayPal error:', err);
+          alert('Payment failed. Please try again.');
+        }
+      }).render(paypalRef.current);
+    } else {
+      window.paypal.Buttons({
+        style: { shape: 'pill', color: 'gold', layout: 'vertical', label: 'subscribe', height: 45 },
+        createSubscription: (data, actions) => {
+          return actions.subscription.create({ plan_id: subscriptionPlanIds[selectedPlan] });
+        },
+        onApprove: (data, actions) => {
+          console.log('Subscription successful!');
+          console.log('Subscription ID:', data.subscriptionID);
+          setPaymentComplete(true);
+          setShowPaywall(false);
+          generateReport();
+        },
+        onError: (err) => {
+          console.error('PayPal subscription error:', err);
+          alert('Subscription failed. Please try again.');
+        }
+      }).render(paypalRef.current);
+    }
   };
 
   // HR-SPECIFIC CATEGORIES AND QUESTIONS
@@ -159,11 +253,11 @@ const HRShieldIQ = () => {
           id: 'job_application', 
           text: 'Does your job application avoid questions about age, race, religion, marital status, or disabilities?', 
           helper: 'Pre-employment inquiries about protected characteristics can lead to discrimination claims, even if unintentional.',
-          options: ['Yes, reviewed by HR/attorney', 'Think so, but not verified', 'Not sure what\'s on it', 'We use an informal process'] 
+          options: ['Yes, reviewed by HR/attorney', 'Think so, but not verified', "Not sure what's on it", 'We use an informal process'] 
         },
         { 
           id: 'i9_completion', 
-          text: 'Do you complete Form I-9 within 3 business days of each new hire\'s start date?', 
+          text: "Do you complete Form I-9 within 3 business days of each new hire's start date?", 
           helper: 'Federal law requires I-9 completion within 3 days. ICE fines range from $252 to $2,507 per form for first offenses.',
           options: ['Yes, always within 3 days', 'Usually, but sometimes delayed', 'Often completed late', 'Not sure what I-9 is'] 
         },
@@ -171,13 +265,13 @@ const HRShieldIQ = () => {
           id: 'i9_storage', 
           text: 'Where do you store I-9 forms?', 
           helper: 'I-9s must be stored separately from personnel files. During an audit, you must produce I-9s without exposing other employee records.',
-          options: ['Separate I-9 folder/binder', 'In each employee\'s personnel file', 'Digital HR system separately', 'Not sure'] 
+          options: ['Separate I-9 folder/binder', "In each employee's personnel file", 'Digital HR system separately', 'Not sure'] 
         },
         { 
           id: 'background_checks', 
           text: 'If you run background checks, do applicants sign a separate disclosure and authorization form?', 
           helper: 'FCRA requires standalone disclosure (not buried in the application) and written consent before running any background check.',
-          options: ['Yes, separate FCRA-compliant form', 'It\'s included in our application', 'We don\'t run background checks', 'Not sure'] 
+          options: ['Yes, separate FCRA-compliant form', "It's included in our application", "We don't run background checks", 'Not sure'] 
         },
         { 
           id: 'offer_letters', 
@@ -220,7 +314,7 @@ const HRShieldIQ = () => {
           id: 'at_will_statement', 
           text: 'Does your handbook clearly state employment is at-will (if applicable in your state)?', 
           helper: 'At-will language should appear prominently and not be contradicted by other handbook language about job security.',
-          options: ['Yes, clearly stated', 'Mentioned but not prominent', 'No at-will statement', 'Not sure / State doesn\'t allow'] 
+          options: ['Yes, clearly stated', 'Mentioned but not prominent', 'No at-will statement', "Not sure / State doesn't allow"] 
         }
       ]
     },
@@ -245,7 +339,7 @@ const HRShieldIQ = () => {
           id: 'overtime_pay', 
           text: 'Are non-exempt employees paid 1.5x their regular rate for hours over 40 per week?', 
           helper: 'Federal law requires overtime at 1.5x. Some states have daily overtime or other rules. Comp time instead of pay is illegal for private employers.',
-          options: ['Yes, always calculated correctly', 'Yes, but calculation may vary', 'We offer comp time instead', 'Not sure how it\'s handled'] 
+          options: ['Yes, always calculated correctly', 'Yes, but calculation may vary', 'We offer comp time instead', "Not sure how it's handled"] 
         },
         { 
           id: 'meal_breaks', 
@@ -312,7 +406,7 @@ const HRShieldIQ = () => {
         { 
           id: 'exit_interviews', 
           text: 'Do you conduct exit interviews with departing employees?', 
-          helper: 'Exit interviews can reveal workplace issues, potential claims, and provide documentation of the employee\'s voluntary departure.',
+          helper: "Exit interviews can reveal workplace issues, potential claims, and provide documentation of the employee's voluntary departure.",
           options: ['Yes, standard practice', 'Sometimes, inconsistently', 'Rarely or never', 'Only for certain positions'] 
         },
         { 
@@ -323,9 +417,9 @@ const HRShieldIQ = () => {
         },
         { 
           id: 'workers_comp', 
-          text: 'Do you have workers\' compensation insurance and a process for reporting injuries?', 
-          helper: 'Workers\' comp is required in almost all states. Failure to carry coverage can result in criminal penalties and personal liability.',
-          options: ['Yes, insurance and reporting process', 'Yes, but informal reporting', 'Not sure about our coverage', 'We\'re exempt (certain states)'] 
+          text: "Do you have workers' compensation insurance and a process for reporting injuries?", 
+          helper: "Workers' comp is required in almost all states. Failure to carry coverage can result in criminal penalties and personal liability.",
+          options: ['Yes, insurance and reporting process', 'Yes, but informal reporting', 'Not sure about our coverage', "We're exempt (certain states)"] 
         },
         { 
           id: 'retaliation_awareness', 
@@ -337,29 +431,156 @@ const HRShieldIQ = () => {
     }
   ];
 
-  const currentCategoryData = categories[currentCategory];
-  const totalQuestions = categories.reduce((sum, cat) => sum + cat.questions.length, 0);
-  const answeredQuestions = Object.keys(answers).length;
-  const allQuestionsAnswered = currentCategoryData.questions.every(q => answers[q.id]);
+  const handleAnswer = (questionId, answer) => {
+    setAnswers(prev => ({ ...prev, [questionId]: answer }));
+  };
 
-  // Scoring logic
-  const calculateScore = () => {
-    let score = 0;
-    const allQuestions = categories.flatMap(cat => cat.questions);
+  const calculateRiskScore = () => {
+    let highRisk = 0;
+    let mediumRisk = 0;
+    let iqScore = 0;
     
-    allQuestions.forEach(question => {
-      const answer = answers[question.id];
-      if (!answer) return;
-      
-      const optionIndex = question.options.indexOf(answer);
-      if (optionIndex === 0) score += 20; // Best practice
-      else if (optionIndex === 1) score += 12; // Partial
-      else if (optionIndex === 2) score += 4; // Poor but aware
-      else score += 0; // Worst or unsure
+    Object.entries(answers).forEach(([key, value]) => {
+      if (value.includes('No ') || value.includes('Never') || value === 'Not sure' || value.includes('Not sure what') || value.includes('No formal') || value.includes('No policy') || value.includes('No handbook') || value.includes('No process') || value.includes('No posters') || value.includes('No documentation') || value.includes('Verbal') || value.includes('case-by-case')) {
+        highRisk++;
+        iqScore += 0;
+      } else if (value.includes('Partially') || value.includes('Informal') || value.includes('Occasionally') || value.includes('some') || value.includes('Eventually') || value.includes('Rarely') || value.includes('Think so') || value.includes('Usually') || value.includes('Sometimes') || value.includes('Varies') || value.includes('outdated') || value.includes('but not')) {
+        mediumRisk++;
+        iqScore += 12;
+      } else {
+        iqScore += 20;
+      }
     });
     
-    const iqScore = Math.round((score / 500) * 100);
-    return { score, iqScore };
+    return { 
+      highRisk, 
+      mediumRisk, 
+      lowRisk: Object.keys(answers).length - highRisk - mediumRisk,
+      iqScore: iqScore
+    };
+  };
+
+  // Send report email function
+  const sendReportEmail = async (emailAddress, reportData) => {
+    console.log('sendReportEmail called with:', emailAddress);
+    if (!emailAddress || !emailAddress.includes('@')) {
+      console.log('No valid email provided for report delivery');
+      return;
+    }
+    try {
+      if (typeof window.emailjs === 'undefined') {
+        console.log('EmailJS not loaded - skipping email send');
+        return;
+      }
+      console.log('EmailJS is loaded, preparing to send...');
+      const r = reportData || {};
+      const { iqScore } = calculateRiskScore();
+      
+      let prioritiesText = '';
+      if (r.priorities && r.priorities.length > 0) {
+        prioritiesText = r.priorities.map((p, i) => 
+          `${i + 1}. ${p.title || 'Priority'}\n   → ${p.reason || ''}`
+        ).join('\n\n');
+      }
+      
+      let criticalText = '';
+      if (r.criticalIssues && r.criticalIssues.length > 0) {
+        criticalText = r.criticalIssues.map(issue => 
+          `⚠️ ${issue.topic || 'Issue'}\n   Risk: ${issue.risk || 'See recommendation'}\n   Fix: ${issue.fix || 'Address this issue'}\n   Effort: ${issue.effort || 'Varies'}`
+        ).join('\n\n');
+      }
+      
+      let attentionText = '';
+      if (r.attentionIssues && r.attentionIssues.length > 0) {
+        attentionText = r.attentionIssues.map(issue => 
+          `• ${issue.topic || 'Issue'}\n   Fix: ${issue.fix || 'Address this'}\n   Effort: ${issue.effort || 'Varies'}`
+        ).join('\n\n');
+      }
+      
+      let goodText = '';
+      if (r.goodPractices && r.goodPractices.length > 0) {
+        goodText = r.goodPractices.map(practice => `✓ ${practice}`).join('\n');
+      }
+      
+      let actionText = '';
+      if (r.actionPlan) {
+        const week1 = r.actionPlan.week1 ? r.actionPlan.week1.join('\n   • ') : '';
+        const week2 = r.actionPlan.week2to4 ? r.actionPlan.week2to4.join('\n   • ') : '';
+        const ongoing = r.actionPlan.ongoing ? r.actionPlan.ongoing.join('\n   • ') : '';
+        actionText = `WEEK 1 (Quick Wins):\n   • ${week1}\n\nWEEK 2-4:\n   • ${week2}\n\nONGOING:\n   • ${ongoing}`;
+      }
+      
+      const fullReport = `
+═══════════════════════════════════════
+       YOUR HRSHIELDIQ™ REPORT
+═══════════════════════════════════════
+
+Organization: ${businessInfo.name || 'Your Organization'}
+Industry: ${businessInfo.industry || 'N/A'}
+Size: ${businessInfo.size || 'N/A'}
+
+HRShieldIQ™ SCORE: ${r.score || iqScore}/500
+RISK LEVEL: ${r.riskLevel || 'See below'}
+
+───────────────────────────────────────
+EXECUTIVE SUMMARY
+───────────────────────────────────────
+${r.executiveSummary || 'Assessment completed. See details below.'}
+
+───────────────────────────────────────
+TOP PRIORITIES
+───────────────────────────────────────
+${prioritiesText || 'Review findings below'}
+
+───────────────────────────────────────
+CRITICAL ISSUES (${r.criticalCount || 0})
+───────────────────────────────────────
+${criticalText || 'None identified'}
+
+───────────────────────────────────────
+NEEDS ATTENTION (${r.attentionCount || 0})
+───────────────────────────────────────
+${attentionText || 'None identified'}
+
+───────────────────────────────────────
+GOOD PRACTICES (${r.goodCount || 0})
+───────────────────────────────────────
+${goodText || 'See report'}
+
+───────────────────────────────────────
+30-DAY ACTION PLAN
+───────────────────────────────────────
+${actionText || 'Review report for recommendations'}
+
+═══════════════════════════════════════
+       RESOURCES
+═══════════════════════════════════════
+• DOL Wage & Hour: dol.gov/agencies/whd
+• EEOC Employers: eeoc.gov/employers
+• SHRM Resources: shrm.org
+• I-9 Central: uscis.gov/i-9
+
+───────────────────────────────────────
+This report was generated by HRShieldIQ™
+For questions: info@techshieldkc.com
+© ${new Date().getFullYear()} TechShield KC LLC
+───────────────────────────────────────
+`;
+
+      const templateParams = {
+        to_email: emailAddress,
+        to_name: businessInfo.name || 'Customer',
+        from_name: 'HRShieldIQ',
+        subject: `Your HRShieldIQ Report - ${businessInfo.name || 'Assessment Complete'}`,
+        message: fullReport
+      };
+
+      console.log('Sending email to:', emailAddress);
+      const result = await window.emailjs.send('service_breachblock', 'template_report', templateParams);
+      console.log('Email sent successfully:', result);
+    } catch (error) {
+      console.error('Failed to send report email:', error);
+    }
   };
 
   // Background report generation
@@ -367,32 +588,14 @@ const HRShieldIQ = () => {
   const [reportReady, setReportReady] = useState(false);
   const [pendingReport, setPendingReport] = useState(null);
 
-  const generateReport = async (isPaid = false) => {
-    // If payment just completed and report is ready, show it immediately
-    if ((isPaid || paymentComplete) && reportReady && pendingReport) {
-      setReport(pendingReport);
-      setCurrentStep('report');
-      setLoading(false);
-      return;
-    }
-    
-    if (reportGenerating) {
-      setLoading(true);
-      return;
-    }
-    
-    setLoading(true);
-    setShowPaywall(false);
-    
-    await generateReportAPI(isPaid);
-  };
-
-  const generateReportAPI = async (isPaid = false) => {
+  const startBackgroundReportGeneration = async () => {
+    if (reportGenerating || reportReady) return;
+    console.log('Starting background report generation...');
     setReportGenerating(true);
     
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    const prompt = `You are an HR compliance advisor. Analyze ALL 25 questions in this employment compliance assessment and return ONLY valid JSON.
+    try {
+      const { iqScore } = calculateRiskScore();
+      const prompt = `You are an HR compliance advisor. Analyze ALL 25 questions in this employment compliance assessment and return ONLY valid JSON.
 
 BUSINESS: ${businessInfo.name}
 INDUSTRY: ${businessInfo.industry}
@@ -410,71 +613,37 @@ SCORING RULES:
 - Score ranges: Under 200=HIGH RISK, 200-300=ELEVATED RISK, 300-400=MODERATE, 400-500=STRONG
 
 CATEGORIZATION RULES - EVERY QUESTION MUST GO INTO ONE CATEGORY:
-- criticalIssues: Answers that scored 0-4 points (worst two options) - these are serious compliance gaps
-- attentionIssues: Answers that scored 12 points (second-best option) - room for improvement
+- criticalIssues: Answers that scored 0-4 points (worst two options) - serious compliance gaps
+- attentionIssues: Answers that scored 12 points (second-best option) - room for improvement  
 - goodPractices: Answers that scored 20 points (best option) - already compliant
 
 INDUSTRY-SPECIFIC HR CONTEXT for ${businessInfo.industry}:
-- Healthcare / Medical: HIPAA training requirements, credential verification, background check regulations, on-call pay rules, mandatory overtime limits in some states.
-- Religious Organization: Ministerial exception for certain roles, religious discrimination nuances, volunteer vs. employee classification, parsonage considerations.
-- Daycare / Childcare: Mandatory background checks, child abuse reporting training, staff-to-child ratios create scheduling complexity, high turnover.
-- Retail / Restaurant: Tip credit calculations, minor work permits, predictive scheduling laws, split shift premiums, high turnover documentation.
-- Construction / Trades: Davis-Bacon Act for federal projects, prevailing wage, apprenticeship regulations, safety training documentation, subcontractor vs. employee.
-- Professional Services: Exempt classification scrutiny, non-compete enforceability varies by state, client confidentiality in separation.
-- Manufacturing: OSHA recordkeeping, union considerations, shift differential calculations, temporary worker joint employment.
-- Nonprofit: Volunteer vs. employee classification, grant-funded position compliance, board member employment issues.
+- Healthcare / Medical: HIPAA training, credential verification, background checks, on-call pay rules
+- Religious Organization: Ministerial exception, volunteer vs. employee classification
+- Daycare / Childcare: Mandatory background checks, child abuse reporting training, staff ratios
+- Retail / Restaurant: Tip credit calculations, minor work permits, predictive scheduling
+- Construction / Trades: Davis-Bacon Act, prevailing wage, apprenticeship regulations
+- Professional Services: Exempt classification scrutiny, non-compete enforceability
+- Manufacturing: OSHA recordkeeping, union considerations, shift differentials
+- Nonprofit: Volunteer vs. employee classification, grant-funded position compliance
 
-Return this JSON structure with COMPLETE analysis of ALL 25 questions:
+Return this JSON structure:
 {
-  "score": [calculated number 0-500 based on scoring rules above],
-  "riskLevel": "[HIGH RISK/ELEVATED RISK/MODERATE/STRONG based on score]",
-  "criticalCount": [count of criticalIssues array],
-  "attentionCount": [count of attentionIssues array],
-  "goodCount": [count of goodPractices array - these three counts MUST equal 25],
-  "executiveSummary": "[4-5 sentences: Acknowledge what they're doing well, identify the key compliance gaps, mention industry-specific risks for ${businessInfo.industry}, give overall assessment and most urgent action]",
-  "priorities": [
-    {"title": "[Most urgent specific action]", "reason": "[Why this matters - include penalty amount or lawsuit statistic]"},
-    {"title": "[Second priority action]", "reason": "[Consequence if not addressed]"},
-    {"title": "[Third priority action]", "reason": "[Business impact]"}
-  ],
-  "criticalIssues": [
-    {
-      "topic": "[Specific compliance area from their poor answer]",
-      "answer": "[Quote their exact answer choice]",
-      "risk": "[2-3 sentences: Specific penalties (dollar amounts), lawsuit exposure, regulatory consequences for ${businessInfo.industry}]",
-      "fix": "[Detailed steps: exactly what to do, what forms/documents needed, who should own this task, resources to use]",
-      "effort": "[Realistic time estimate: 1 hour, 2-3 hours, half-day, ongoing, etc.]"
-    }
-  ],
-  "attentionIssues": [
-    {
-      "topic": "[Compliance area needing improvement]",
-      "answer": "[Their answer]",
-      "risk": "[1-2 sentences on the specific risk or exposure]",
-      "fix": "[Specific improvement steps with actionable detail]",
-      "effort": "[Time estimate]"
-    }
-  ],
-  "goodPractices": [
-    {"practice": "[What they're doing well - be specific]", "benefit": "[Why this matters - protection provided]"}
-  ],
-  "actionPlan": {
-    "week1": ["[Specific quick win from critical issues]", "[Another immediate action]", "[Third quick win]", "[Fourth if applicable]", "[Fifth if applicable]"],
-    "week2to4": ["[Larger implementation from attention items]", "[Second task]", "[Third task]", "[Fourth task]", "[Fifth task]", "[Sixth task]", "[Seventh task]", "[Eighth task]"],
-    "ongoing": ["[Monthly maintenance task]", "[Quarterly review task]", "[Annual compliance task]", "[Another ongoing task]", "[Fifth ongoing]", "[Sixth ongoing]"]
-  }
+  "score": [calculated 0-500],
+  "riskLevel": "[HIGH RISK/ELEVATED RISK/MODERATE/STRONG]",
+  "criticalCount": [count],
+  "attentionCount": [count],
+  "goodCount": [count - these three MUST equal 25],
+  "executiveSummary": "[4-5 sentences with industry-specific context]",
+  "priorities": [{"title": "[action]", "reason": "[why - include penalties]"}, ...3 items],
+  "criticalIssues": [{"topic": "[area]", "answer": "[their answer]", "risk": "[consequences]", "fix": "[steps]", "effort": "[time]"}],
+  "attentionIssues": [{"topic": "[area]", "answer": "[answer]", "risk": "[risk]", "fix": "[steps]", "effort": "[time]"}],
+  "goodPractices": ["[what they're doing well]"],
+  "actionPlan": {"week1": ["[tasks]"], "week2to4": ["[tasks]"], "ongoing": ["[tasks]"]}
 }
 
-CRITICAL REQUIREMENTS:
-- Return ONLY valid JSON, no markdown code blocks
-- ALL 25 questions must be categorized - criticalCount + attentionCount + goodCount MUST equal 25
-- Be specific to ${businessInfo.industry} industry throughout
-- Reference their actual answer text in quotes
-- Include specific dollar amounts for penalties and fines where relevant
-- goodPractices must be an array of objects with "practice" and "benefit" fields
-- Generate comprehensive action plan items (5+ per section)`;
+CRITICAL: Return ONLY valid JSON, no markdown.`;
 
-    try {
       const response = await fetch('/api/generate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -492,10 +661,9 @@ CRITICAL REQUIREMENTS:
         reportData = JSON.parse(cleanJson);
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
-        const { score } = calculateScore();
         reportData = {
-          score: score,
-          riskLevel: score < 200 ? 'HIGH RISK' : score < 300 ? 'ELEVATED RISK' : score < 400 ? 'MODERATE' : 'STRONG',
+          score: iqScore,
+          riskLevel: iqScore < 200 ? 'HIGH RISK' : iqScore < 300 ? 'ELEVATED RISK' : iqScore < 400 ? 'MODERATE' : 'STRONG',
           criticalCount: 3,
           attentionCount: 5,
           goodCount: 17,
@@ -512,64 +680,117 @@ CRITICAL REQUIREMENTS:
         };
       }
       
-      if (isPaid || paymentComplete) {
-        setReport(reportData);
-        setCurrentStep('report');
-      } else {
-        setPendingReport(reportData);
-        setReportReady(true);
-      }
+      console.log('Background report ready!');
+      setPendingReport(reportData);
+      setReportReady(true);
+      
     } catch (error) {
-      console.error('Error:', error);
-      const { score } = calculateScore();
+      console.error('Background report error:', error);
+      const { iqScore } = calculateRiskScore();
       const fallbackReport = {
-        score: score,
-        riskLevel: score < 200 ? 'HIGH RISK' : score < 300 ? 'ELEVATED RISK' : score < 400 ? 'MODERATE' : 'STRONG',
+        score: iqScore,
+        riskLevel: iqScore < 200 ? 'HIGH RISK' : iqScore < 300 ? 'ELEVATED RISK' : iqScore < 400 ? 'MODERATE' : 'STRONG',
         criticalCount: 3,
         attentionCount: 5,
         goodCount: 17,
-        executiveSummary: 'Assessment completed. Please review the details below.',
+        executiveSummary: 'Assessment completed.',
         priorities: [
           { title: 'Review I-9 compliance', reason: 'ICE fines are significant' },
           { title: 'Update handbook', reason: 'Employment law changes frequently' },
-          { title: 'Document performance issues', reason: 'Protects against wrongful termination claims' }
+          { title: 'Document performance', reason: 'Protects against wrongful termination claims' }
         ],
         criticalIssues: [],
         attentionIssues: [],
         goodPractices: [],
         actionPlan: { week1: ['Review report'], week2to4: ['Implement changes'], ongoing: ['Annual review'] }
       };
-      
-      if (isPaid || paymentComplete) {
-        setReport(fallbackReport);
-        setCurrentStep('report');
-      } else {
-        setPendingReport(fallbackReport);
-        setReportReady(true);
-      }
+      setPendingReport(fallbackReport);
+      setReportReady(true);
     } finally {
-      setLoading(false);
       setReportGenerating(false);
     }
   };
 
-  // Base styles
+  const generateReport = async () => {
+    if (reportReady && pendingReport) {
+      console.log('Using pre-generated report');
+      setReport(pendingReport);
+      setCurrentStep('report');
+      if (businessInfo.email) {
+        sendReportEmail(businessInfo.email, pendingReport);
+      }
+      return;
+    }
+    
+    setLoading(true);
+    await startBackgroundReportGeneration();
+  };
+
+  // Start background generation when all questions answered
+  useEffect(() => {
+    if (Object.keys(answers).length === 25 && !reportGenerating && !reportReady) {
+      console.log('All questions answered, starting background report...');
+      startBackgroundReportGeneration();
+    }
+  }, [answers]);
+
+  // Auto-start background report when entering preview
+  useEffect(() => {
+    if (currentStep === 'preview' && !reportGenerating && !reportReady && Object.keys(answers).length === 25) {
+      startBackgroundReportGeneration();
+    }
+  }, [currentStep]);
+
+  useEffect(() => {
+    if (currentCategory === categories.length - 1) {
+      const allAnswered = categories[currentCategory].questions.every(q => answers[q.id]);
+      if (allAnswered && !reportGenerating && !reportReady) {
+        startBackgroundReportGeneration();
+      }
+    }
+  }, [currentCategory, answers]);
+
+  useEffect(() => {
+    if (loading && reportReady && pendingReport) {
+      console.log('Background report ready, showing to user...');
+      setReport(pendingReport);
+      setCurrentStep('report');
+      setLoading(false);
+      if (businessInfo.email) {
+        sendReportEmail(businessInfo.email, pendingReport);
+      }
+    }
+  }, [loading, reportReady, pendingReport]);
+
+  const currentCategoryData = categories[currentCategory];
+  const allQuestionsAnswered = currentCategoryData?.questions.every(q => answers[q.id]);
+  const totalQuestions = categories.reduce((sum, cat) => sum + cat.questions.length, 0);
+  const answeredQuestions = Object.keys(answers).length;
+
   const baseStyles = {
     minHeight: '100vh',
-    background: colors.darkBg,
+    background: `linear-gradient(135deg, ${colors.darkBg} 0%, ${colors.black} 100%)`,
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
     color: colors.white,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    padding: '2rem 1rem'
+    padding: 'clamp(1rem, 4vw, 2rem)',
+    overflowX: 'hidden'
   };
 
   const globalStyles = `
-    * { box-sizing: border-box; }
-    body { margin: 0; background: ${colors.darkBg}; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { overflow-x: hidden; }
+    html { font-size: 16px; }
+    body { -webkit-text-size-adjust: 100%; }
+    input, select, button { font-family: inherit; font-size: 16px; }
+    input, select { min-height: 48px; }
+    input[type="email"], input[type="text"] { -webkit-appearance: none; appearance: none; }
+    button { min-height: 48px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     ::selection { background: ${colors.primary}; color: white; }
-    input, select, button { font-family: inherit; }
+    @media (max-width: 480px) { html { font-size: 18px; } }
   `;
 
-  // INTRO SCREEN - Landing Page v2
+  // INTRO SCREEN - Landing Page
   if (currentStep === 'intro') {
     const audiences = {
       business: { label: 'Small Business', stat: 'Employment lawsuits have increased 400%', subtext: 'over the past 20 years' },
@@ -581,34 +802,48 @@ CRITICAL REQUIREMENTS:
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#0a0a0a', color: '#e5e5e5', fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.6 }}>
         <style>{globalStyles}</style>
-        
-        {/* Gradient */}
         <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.08) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 0 }} />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
           
+          {/* Saved Report Banner */}
+          {hasStoredReport && report && (
+            <div style={{ background: 'linear-gradient(135deg, #1a472a 0%, #0f2818 100%)', borderBottom: '2px solid #22c55e', padding: '16px 24px', textAlign: 'center' }}>
+              <p style={{ color: '#fff', fontSize: '1rem', marginBottom: '12px' }}>
+                📄 You have a saved report for <strong>{businessInfo.name}</strong>
+              </p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button onClick={() => setCurrentStep('report')} style={{ background: '#22c55e', border: 'none', borderRadius: '6px', padding: '10px 20px', color: '#000', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem', fontWeight: 600 }}>
+                  View My Report
+                </button>
+                <button onClick={() => { localStorage.removeItem('hrshieldiq_report'); localStorage.removeItem('hrshieldiq_business'); setHasStoredReport(false); setReport(null); setBusinessInfo({ name: '', industry: '', size: '', email: '' }); setPaymentComplete(false); }} style={{ background: 'transparent', border: '1px solid #666', borderRadius: '6px', padding: '10px 20px', color: '#999', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem' }}>
+                  Start Fresh
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Hero */}
           <section style={{ padding: '60px 24px 48px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-            
             <h1 style={{ fontSize: 'clamp(2.5rem, 12vw, 3.5rem)', fontWeight: 700, marginBottom: '16px', letterSpacing: '-0.02em' }}>
               <span style={{ color: '#fff' }}>HRShield</span>
               <span style={{ color: colors.primary }}>IQ</span>
               <span style={{ color: colors.primary, fontSize: '0.5em', verticalAlign: 'super' }}>™</span>
             </h1>
 
-            <p style={{ fontSize: '1.2rem', color: '#999', marginBottom: '8px' }}>
+            <p style={{ fontSize: '1.25rem', color: '#999', marginBottom: '8px' }}>
               Before you spend $10,000 on an HR audit,
             </p>
-            <p style={{ fontSize: '1.2rem', color: '#fff', marginBottom: '28px' }}>
+            <p style={{ fontSize: '1.25rem', color: '#fff', marginBottom: '28px' }}>
               spend <span style={{ color: colors.primary, fontWeight: 600 }}>7 minutes</span> finding out what you actually need.
             </p>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', marginBottom: '8px', fontSize: '1rem', color: '#666' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', marginBottom: '8px', fontSize: '1.05rem', color: '#666' }}>
               <span>✓ 7 min</span>
               <span>✓ 25 questions</span>
               <span>✓ DOL & EEOC</span>
             </div>
-            <p style={{ fontSize: '0.75rem', color: '#444', marginBottom: '28px' }}>
+            <p style={{ fontSize: '0.8rem', color: '#444', marginBottom: '28px' }}>
               (Department of Labor & Equal Employment Opportunity Commission)
             </p>
 
@@ -629,50 +864,34 @@ CRITICAL REQUIREMENTS:
               </p>
             </div>
 
-            <button onClick={() => setCurrentStep('business')} style={{ display: 'inline-block', backgroundColor: colors.primary, color: '#fff', padding: '18px 40px', fontSize: '1.15rem', fontWeight: 600, borderRadius: '8px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(37,99,235,0.3)', fontFamily: 'inherit' }}>
+            <button onClick={() => setCurrentStep('business')} style={{ display: 'inline-block', backgroundColor: colors.primary, color: '#fff', padding: '18px 40px', fontSize: '1.15rem', fontWeight: 600, borderRadius: '8px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 24px rgba(37,99,235,0.35)', fontFamily: 'inherit' }}>
               Start Free Assessment →
             </button>
             <p style={{ fontSize: '1rem', color: '#555', marginTop: '16px' }}>
-              Free score preview • Full report: <span style={{ color: colors.primary }}>$29.99</span>
+              Free preview • Full report: <span style={{ color: colors.primary, fontWeight: 600 }}>$29.99</span> • 7 min
             </p>
           </section>
 
           {/* Problem */}
           <section style={{ padding: '48px 24px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>
-              The problem with "experts"
-            </h2>
-            
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>The problem with "experts"</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
-              {[
-                '💰 HR consultants charge $150-300/hour',
-                '⚖️ Attorneys bill for questions you could answer',
-                '📋 You don\'t know what you don\'t know'
-              ].map((item, i) => (
-                <div key={i} style={{ backgroundColor: '#141414', borderRadius: '8px', padding: '16px 20px', fontSize: '1.1rem', color: '#999', border: '1px solid #1a1a1a', textAlign: 'center' }}>
-                  {item}
-                </div>
+              {['💰 HR consultants charge $150-300/hour', '⚖️ Attorneys bill for questions you could answer', "📋 You don't know what you don't know"].map((item, i) => (
+                <div key={i} style={{ backgroundColor: '#141414', borderRadius: '8px', padding: '16px 20px', fontSize: '1.1rem', color: '#999', border: '1px solid #1a1a1a', textAlign: 'center' }}>{item}</div>
               ))}
             </div>
-
-            <p style={{ fontSize: '1.2rem', color: '#fff' }}>
-              What if you knew <span style={{ color: colors.primary }}>where you stand</span> first?
-            </p>
+            <p style={{ fontSize: '1.2rem', color: '#fff' }}>What if you knew <span style={{ color: colors.primary }}>where you stand</span> first?</p>
           </section>
 
-          {/* Credibility - MOVED HERE after Problem */}
+          {/* Credibility */}
           <section style={{ padding: '48px 24px', backgroundColor: '#0f0f0f' }}>
             <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>
-                Built on real standards
-              </h2>
-              
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>Built on real standards</h2>
               <div style={{ backgroundColor: '#141414', borderRadius: '12px', padding: '24px', border: '1px solid #252525', marginBottom: '16px' }}>
                 <p style={{ fontSize: '1.05rem', color: '#ccc', lineHeight: 1.7, margin: 0 }}>
                   Built on <span style={{ color: colors.primary, fontWeight: 600 }}>DOL guidelines</span>, <span style={{ color: colors.primary, fontWeight: 600 }}>EEOC requirements</span>, and <span style={{ color: colors.primary, fontWeight: 600 }}>SHRM best practices</span>—the same standards employment attorneys and HR professionals use.
                 </p>
               </div>
-              
               <div style={{ backgroundColor: '#141414', borderRadius: '12px', padding: '24px', border: '1px solid #252525' }}>
                 <p style={{ fontSize: '1.05rem', color: '#ccc', lineHeight: 1.7, margin: 0 }}>
                   Built by an <span style={{ color: '#fff', fontWeight: 500 }}>IT Director who spent 20 years managing HR compliance</span> across 150+ locations. Vetted by a <span style={{ color: '#fff', fontWeight: 500 }}>healthcare HR VP</span> who's lived this stuff.
@@ -681,13 +900,10 @@ CRITICAL REQUIREMENTS:
             </div>
           </section>
 
-          {/* Features - NO background */}
+          {/* Features */}
           <section style={{ padding: '48px 24px' }}>
             <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '28px' }}>
-                Your report includes
-              </h2>
-
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '28px' }}>Your report includes</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                 {[
                   { icon: '🎯', title: 'Find Gaps', items: 'Hiring, handbook, wage & hour, docs' },
@@ -707,43 +923,24 @@ CRITICAL REQUIREMENTS:
 
           {/* Sample Report */}
           <section style={{ padding: '48px 24px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>
-              Sample report preview
-            </h2>
-
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>Sample report preview</h2>
             <div style={{ backgroundColor: '#141414', borderRadius: '12px', padding: '24px', border: '1px solid #252525' }}>
               <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontSize: '2.5rem', fontWeight: 700, color: colors.primary }}>
-                  324<span style={{ fontSize: '1rem', color: '#666' }}>/500</span>
-                </div>
-                <span style={{ backgroundColor: 'rgba(37,99,235,0.2)', color: colors.primary, padding: '4px 12px', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 600 }}>ELEVATED RISK</span>
+                <div style={{ fontSize: '2.5rem', fontWeight: 700, color: colors.primary }}>324<span style={{ fontSize: '1rem', color: '#666' }}>/500</span></div>
+                <span style={{ backgroundColor: 'rgba(37,99,235,0.2)', color: colors.primary, padding: '4px 12px', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 600 }}>MODERATE RISK</span>
               </div>
-
               <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginBottom: '20px', fontSize: '1rem' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e74c3c' }}>4</div>
-                  <div style={{ color: '#666', fontSize: '0.85rem' }}>Critical</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f39c12' }}>6</div>
-                  <div style={{ color: '#666', fontSize: '0.85rem' }}>Attention</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#27ae60' }}>15</div>
-                  <div style={{ color: '#666', fontSize: '0.85rem' }}>Good</div>
-                </div>
+                <div style={{ textAlign: 'center' }}><div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e74c3c' }}>3</div><div style={{ color: '#666', fontSize: '0.85rem' }}>Critical</div></div>
+                <div style={{ textAlign: 'center' }}><div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f39c12' }}>5</div><div style={{ color: '#666', fontSize: '0.85rem' }}>Attention</div></div>
+                <div style={{ textAlign: 'center' }}><div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#27ae60' }}>17</div><div style={{ color: '#666', fontSize: '0.85rem' }}>Good</div></div>
               </div>
-
               <div style={{ backgroundColor: '#1a1a1a', borderRadius: '8px', padding: '16px', marginBottom: '16px', textAlign: 'left' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ color: '#e74c3c', fontWeight: 600, fontSize: '1rem' }}>🔴 I-9s Stored in Personnel Files</span>
                   <span style={{ backgroundColor: '#e74c3c', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>CRITICAL</span>
                 </div>
-                <p style={{ color: '#888', fontSize: '0.95rem', margin: 0 }}>
-                  Fix: Create separate I-9 folder. <span style={{ color: colors.primary }}>⏱️ 1-2 hours</span>
-                </p>
+                <p style={{ color: '#888', fontSize: '0.95rem', margin: 0 }}>Fix: Create separate I-9 folder. <span style={{ color: colors.primary }}>⏱️ 1-2 hours</span></p>
               </div>
-
               <div style={{ backgroundColor: '#1a1a1a', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
                 <p style={{ color: '#fff', fontWeight: 600, fontSize: '1rem', margin: '0 0 12px' }}>🎯 30-Day Action Plan</p>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -754,19 +951,13 @@ CRITICAL REQUIREMENTS:
                 </div>
               </div>
             </div>
-
-            <a href="/sample-report.html" target="_blank" style={{ display: 'inline-block', color: colors.primary, marginTop: '20px', fontSize: '1rem', textDecoration: 'none' }}>
-              View full sample →
-            </a>
+            <a href="/sample-report.html" target="_blank" style={{ display: 'inline-block', color: colors.primary, marginTop: '20px', fontSize: '1rem', textDecoration: 'none' }}>View full sample →</a>
           </section>
 
           {/* Price Comparison */}
           <section style={{ padding: '48px 24px', backgroundColor: '#0f0f0f' }}>
             <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '28px' }}>
-                The math
-              </h2>
-
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '28px' }}>The math</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                 <div style={{ backgroundColor: '#1a1a1a', borderRadius: '10px', padding: '20px 12px', border: '1px solid #252525' }}>
                   <p style={{ color: '#555', fontSize: '0.9rem', margin: '0 0 8px' }}>HR Audit</p>
@@ -790,10 +981,7 @@ CRITICAL REQUIREMENTS:
 
           {/* What It Is */}
           <section style={{ padding: '48px 24px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>
-              What this is
-            </h2>
-            
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>What this is</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', fontSize: '1rem' }}>
               <div>
                 <p style={{ color: '#27ae60', fontWeight: 600, marginBottom: '12px', fontSize: '1.1rem' }}>✓ IS</p>
@@ -810,13 +998,10 @@ CRITICAL REQUIREMENTS:
             </div>
           </section>
 
-          {/* FAQ - WITH background, centered text - UPDATED 5 QUESTIONS */}
+          {/* FAQ */}
           <section style={{ padding: '48px 24px', backgroundColor: '#0f0f0f' }}>
             <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>
-                FAQ
-              </h2>
-
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>FAQ</h2>
               {[
                 { q: "I'm not an HR expert. Will I understand this?", a: "If you can answer yes, no, or not sure, you can do this. Plain English questions, clear next steps in the report." },
                 { q: "Isn't this just a free checklist?", a: "Free checklists tell you WHAT to check. Our AI report tells you WHERE you're vulnerable and HOW to prioritize based on YOUR answers. That's a consultant's job." },
@@ -834,20 +1019,12 @@ CRITICAL REQUIREMENTS:
 
           {/* Final CTA */}
           <section style={{ padding: '60px 24px', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 600, color: '#fff', marginBottom: '16px', lineHeight: 1.4 }}>
-              You'll find out where you stand eventually.
-            </h2>
-            <p style={{ fontSize: '1.1rem', color: '#888', marginBottom: '32px', lineHeight: 1.6 }}>
-              On <strong style={{ color: '#fff' }}>your terms</strong>, or when the DOL comes knocking.
-            </p>
-
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 600, color: '#fff', marginBottom: '16px', lineHeight: 1.4 }}>You'll find out where you stand eventually.</h2>
+            <p style={{ fontSize: '1.1rem', color: '#888', marginBottom: '32px', lineHeight: 1.6 }}>On <strong style={{ color: '#fff' }}>your terms</strong>, or when the DOL comes knocking.</p>
             <button onClick={() => setCurrentStep('business')} style={{ display: 'inline-block', backgroundColor: colors.primary, color: '#fff', padding: '18px 40px', fontSize: '1.15rem', fontWeight: 600, borderRadius: '8px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 24px rgba(37,99,235,0.35)', fontFamily: 'inherit' }}>
               Start Free Assessment →
             </button>
-            
-            <p style={{ fontSize: '1rem', color: '#555', marginTop: '16px' }}>
-              Free preview • Full report: <span style={{ color: colors.primary, fontWeight: 600 }}>$29.99</span> • 7 min
-            </p>
+            <p style={{ fontSize: '1rem', color: '#555', marginTop: '16px' }}>Free preview • Full report: <span style={{ color: colors.primary, fontWeight: 600 }}>$29.99</span> • 7 min</p>
           </section>
 
           {/* Disclaimer */}
@@ -859,9 +1036,7 @@ CRITICAL REQUIREMENTS:
 
           {/* Footer */}
           <footer style={{ padding: '32px 24px', textAlign: 'center', borderTop: '1px solid #1a1a1a' }}>
-            <p style={{ fontSize: '1rem', marginBottom: '8px' }}>
-              <span style={{ color: '#fff' }}>TechShield</span> <span style={{ color: colors.primary }}>KC LLC</span>
-            </p>
+            <p style={{ fontSize: '1rem', marginBottom: '8px' }}><span style={{ color: '#fff' }}>TechShield</span> <span style={{ color: colors.primary }}>KC LLC</span></p>
             <p style={{ fontSize: '0.9rem', color: '#444' }}>
               <a href="/privacy.html" style={{ color: '#444', marginRight: '16px', textDecoration: 'none' }}>Privacy</a>
               <a href="/terms.html" style={{ color: '#444', textDecoration: 'none' }}>Terms</a>
@@ -877,96 +1052,33 @@ CRITICAL REQUIREMENTS:
   // BUSINESS INFO SCREEN
   if (currentStep === 'business') {
     return (
-      <div style={baseStyles}>
+      <div style={{ minHeight: '100vh', backgroundColor: '#0a0a0a', color: '#e5e5e5', fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.6 }}>
         <style>{globalStyles}</style>
-        
-        <div style={{ maxWidth: '500px', margin: '0 auto' }}>
-          {/* Header with Back and Time */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-            <button
-              onClick={() => setCurrentStep('intro')}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: colors.grayLight,
-                cursor: 'pointer',
-                fontSize: '0.95rem',
-                padding: 0,
-                fontFamily: 'inherit'
-              }}
-            >
-              ← Back
-            </button>
-            <span style={{ color: colors.gray, fontSize: '0.9rem' }}>
-              ⏱️ About 7 minutes
-            </span>
+        <div style={{ maxWidth: '500px', margin: '0 auto', padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+            <button onClick={() => setCurrentStep('intro')} style={{ background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '1rem', fontFamily: 'inherit', padding: 0 }}>← Back</button>
+            <span style={{ color: '#555', fontSize: '0.9rem' }}>⏱️ About 7 minutes</span>
           </div>
-          
-          {/* Main Heading */}
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.75rem', color: colors.white }}>
-            Personalize your report
-          </h1>
-          <p style={{ color: colors.gray, fontSize: '1rem', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-            We'll customize your report with <span style={{ color: colors.white, fontWeight: 500 }}>industry specific risks</span> and benchmarks.
-          </p>
-          
-          {/* Score Explanation Box */}
-          <div style={{
-            background: colors.darkCard,
-            border: `1px solid ${colors.grayDark}44`,
-            borderRadius: '10px',
-            padding: '1rem 1.25rem',
-            marginBottom: '2rem'
-          }}>
-            <p style={{ color: colors.gray, fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
-              <span style={{ color: colors.primary, fontWeight: 600 }}>HRShieldIQ™ Score:</span> 25 questions × 20 points each = <span style={{ color: colors.white, fontWeight: 600 }}>500 max</span>. Higher is better. Your score reflects HR compliance readiness based on DOL & EEOC guidelines.
+
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 600, color: '#fff', marginBottom: '12px' }}>Personalize your report</h1>
+          <p style={{ fontSize: '1.1rem', color: '#888', marginBottom: '24px' }}>We'll customize your report with <span style={{ color: '#fff' }}>industry specific risks</span> and benchmarks.</p>
+
+          <div style={{ backgroundColor: '#141414', border: '1px solid #252525', borderRadius: '8px', padding: '16px', marginBottom: '32px' }}>
+            <p style={{ fontSize: '0.95rem', color: '#999', margin: 0, lineHeight: 1.6 }}>
+              <span style={{ color: colors.primary, fontWeight: 600 }}>HRShieldIQ™ Score:</span> 25 questions × 20 points each = <span style={{ color: '#fff', fontWeight: 600 }}>500 max</span>. Higher is better. Your score reflects HR compliance readiness based on DOL & EEOC guidelines.
             </p>
           </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Organization Name */}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.95rem' }}>
-                Organization Name <span style={{ color: colors.primary }}>*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Your Business Name"
-                value={businessInfo.name}
-                onChange={e => setBusinessInfo(prev => ({ ...prev, name: e.target.value }))}
-                style={{
-                  width: '100%',
-                  padding: '1rem 1.25rem',
-                  background: colors.darkCard,
-                  border: `1px solid ${colors.grayDark}44`,
-                  borderRadius: '8px',
-                  color: colors.white,
-                  fontSize: '1rem'
-                }}
-              />
+              <label style={{ display: 'block', fontSize: '1rem', fontWeight: 500, color: '#fff', marginBottom: '8px' }}>Organization Name <span style={{ color: colors.primary }}>*</span></label>
+              <input type="text" placeholder="Your Business Name" value={businessInfo.name} onChange={e => setBusinessInfo(prev => ({ ...prev, name: e.target.value }))} style={{ width: '100%', padding: '16px', fontSize: '1rem', backgroundColor: '#141414', border: '1px solid #252525', borderRadius: '8px', color: '#fff', outline: 'none', boxSizing: 'border-box' }} onFocus={e => e.target.style.borderColor = colors.primary} onBlur={e => e.target.style.borderColor = '#252525'} />
             </div>
-            
-            {/* Industry */}
+
             <div>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: 500, fontSize: '0.95rem' }}>
-                Industry <span style={{ color: colors.primary }}>*</span>
-              </label>
-              <p style={{ color: colors.grayDark, fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-                This customizes your report with relevant compliance risks
-              </p>
-              <select
-                value={businessInfo.industry}
-                onChange={e => setBusinessInfo(prev => ({ ...prev, industry: e.target.value }))}
-                style={{
-                  width: '100%',
-                  padding: '1rem 1.25rem',
-                  background: colors.darkCard,
-                  border: `1px solid ${colors.grayDark}44`,
-                  borderRadius: '8px',
-                  color: businessInfo.industry ? colors.white : colors.gray,
-                  fontSize: '1rem'
-                }}
-              >
+              <label style={{ display: 'block', fontSize: '1rem', fontWeight: 500, color: '#fff', marginBottom: '8px' }}>Industry <span style={{ color: colors.primary }}>*</span></label>
+              <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '8px', marginTop: 0 }}>This customizes your report with relevant compliance risks</p>
+              <select value={businessInfo.industry} onChange={e => setBusinessInfo(prev => ({ ...prev, industry: e.target.value }))} style={{ width: '100%', padding: '16px', fontSize: '1rem', backgroundColor: '#141414', border: '1px solid #252525', borderRadius: '8px', color: businessInfo.industry ? '#fff' : '#666', outline: 'none', cursor: 'pointer', boxSizing: 'border-box' }} onFocus={e => e.target.style.borderColor = colors.primary} onBlur={e => e.target.style.borderColor = '#252525'}>
                 <option value="">Select your industry...</option>
                 <option value="Construction / Trades">Construction / Trades</option>
                 <option value="Daycare / Childcare">Daycare / Childcare</option>
@@ -976,7 +1088,7 @@ CRITICAL REQUIREMENTS:
                 <option value="Hospitality / Restaurant">Hospitality / Restaurant</option>
                 <option value="Manufacturing">Manufacturing</option>
                 <option value="Nonprofit / Association">Nonprofit / Association</option>
-                <option value="Professional Services">Professional Services (Legal, Accounting, Consulting)</option>
+                <option value="Professional Services">Professional Services</option>
                 <option value="Real Estate">Real Estate</option>
                 <option value="Religious Organization">Religious Organization</option>
                 <option value="Retail / E-commerce">Retail / E-commerce</option>
@@ -984,25 +1096,10 @@ CRITICAL REQUIREMENTS:
                 <option value="Other">Other</option>
               </select>
             </div>
-            
-            {/* Organization Size */}
+
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.95rem' }}>
-                Organization Size <span style={{ color: colors.primary }}>*</span>
-              </label>
-              <select
-                value={businessInfo.size}
-                onChange={e => setBusinessInfo(prev => ({ ...prev, size: e.target.value }))}
-                style={{
-                  width: '100%',
-                  padding: '1rem 1.25rem',
-                  background: colors.darkCard,
-                  border: `1px solid ${colors.grayDark}44`,
-                  borderRadius: '8px',
-                  color: businessInfo.size ? colors.white : colors.gray,
-                  fontSize: '1rem'
-                }}
-              >
+              <label style={{ display: 'block', fontSize: '1rem', fontWeight: 500, color: '#fff', marginBottom: '8px' }}>Organization Size <span style={{ color: colors.primary }}>*</span></label>
+              <select value={businessInfo.size} onChange={e => setBusinessInfo(prev => ({ ...prev, size: e.target.value }))} style={{ width: '100%', padding: '16px', fontSize: '1rem', backgroundColor: '#141414', border: '1px solid #252525', borderRadius: '8px', color: businessInfo.size ? '#fff' : '#666', outline: 'none', cursor: 'pointer', boxSizing: 'border-box' }} onFocus={e => e.target.style.borderColor = colors.primary} onBlur={e => e.target.style.borderColor = '#252525'}>
                 <option value="">Select size...</option>
                 <option value="1-4 employees">1-4 employees</option>
                 <option value="5-14 employees">5-14 employees</option>
@@ -1012,44 +1109,12 @@ CRITICAL REQUIREMENTS:
               </select>
             </div>
           </div>
-          
-          {/* Submit Button */}
-          <button
-            onClick={() => setCurrentStep('questions')}
-            disabled={!businessInfo.name.trim() || !businessInfo.industry || !businessInfo.size}
-            style={{
-              width: '100%',
-              marginTop: '2rem',
-              background: (businessInfo.name.trim() && businessInfo.industry && businessInfo.size) ? colors.primary : colors.darkCard,
-              color: (businessInfo.name.trim() && businessInfo.industry && businessInfo.size) ? colors.white : colors.grayDark,
-              border: 'none',
-              padding: '1.1rem',
-              fontSize: '1.05rem',
-              fontWeight: 600,
-              borderRadius: '8px',
-              cursor: (businessInfo.name.trim() && businessInfo.industry && businessInfo.size) ? 'pointer' : 'not-allowed',
-              fontFamily: 'inherit'
-            }}
-          >
-            Start My Assessment →
+
+          <button onClick={() => setCurrentStep('questions')} disabled={!businessInfo.name.trim() || !businessInfo.industry || !businessInfo.size} style={{ width: '100%', marginTop: '32px', padding: '16px', fontSize: '1.1rem', fontWeight: 600, backgroundColor: (businessInfo.name.trim() && businessInfo.industry && businessInfo.size) ? colors.primary : '#333', color: (businessInfo.name.trim() && businessInfo.industry && businessInfo.size) ? '#fff' : '#666', border: 'none', borderRadius: '8px', cursor: (businessInfo.name.trim() && businessInfo.industry && businessInfo.size) ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+            Start Assessment →
           </button>
-          
-          {/* Helper text */}
-          {(!businessInfo.name.trim() || !businessInfo.industry || !businessInfo.size) && (
-            <p style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.85rem', color: colors.grayDark }}>
-              Please complete all fields to continue
-            </p>
-          )}
-          
-          {/* Privacy note */}
-          <p style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.85rem', color: colors.gray }}>
-            🔒 Your info stays private. We never sell data.
-          </p>
-          
-          {/* Questions link */}
-          <p style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.85rem', color: colors.grayDark }}>
-            Questions? <a href="mailto:info@techshieldkc.com" style={{ color: colors.primary, textDecoration: 'none' }}>info@techshieldkc.com</a>
-          </p>
+
+          <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#555', marginTop: '16px' }}>🔒 Your info stays private. We never sell data.</p>
         </div>
       </div>
     );
@@ -1060,40 +1125,20 @@ CRITICAL REQUIREMENTS:
     return (
       <div style={baseStyles}>
         <style>{globalStyles}</style>
-        
         <div style={{ maxWidth: '650px', margin: '0 auto' }}>
           {/* Progress */}
           <div style={{ marginBottom: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <span style={{ color: colors.gray, fontSize: '0.85rem' }}>
-                {currentCategoryData.icon} {currentCategoryData.title}
-              </span>
-              <span style={{ color: colors.gray, fontSize: '0.85rem' }}>
-                {answeredQuestions}/{totalQuestions}
-              </span>
+              <span style={{ color: colors.gray, fontSize: '0.85rem' }}>{currentCategoryData.icon} {currentCategoryData.title}</span>
+              <span style={{ color: colors.gray, fontSize: '0.85rem' }}>{answeredQuestions}/{totalQuestions}</span>
             </div>
             <div style={{ height: '3px', background: colors.darkCard, borderRadius: '100px', overflow: 'hidden' }}>
-              <div style={{
-                height: '100%',
-                width: `${(answeredQuestions / totalQuestions) * 100}%`,
-                background: colors.primary,
-                borderRadius: '100px',
-                transition: 'width 0.3s ease'
-              }} />
+              <div style={{ height: '100%', width: `${(answeredQuestions / totalQuestions) * 100}%`, background: colors.primary, borderRadius: '100px', transition: 'width 0.3s ease' }} />
             </div>
           </div>
 
           {/* Reassurance */}
-          <div style={{
-            background: colors.darkCard,
-            border: `1px solid ${colors.grayDark}22`,
-            borderRadius: '8px',
-            padding: '0.875rem 1rem',
-            marginBottom: '1.5rem',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '0.75rem'
-          }}>
+          <div style={{ background: colors.darkCard, border: `1px solid ${colors.grayDark}22`, borderRadius: '8px', padding: '0.875rem 1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
             <span style={{ fontSize: '1rem', flexShrink: 0 }}>💡</span>
             <p style={{ fontSize: '0.85rem', color: colors.gray, lineHeight: 1.5, margin: 0 }}>
               <strong style={{ color: colors.grayLight }}>Answer as best you can.</strong> If you're unsure, select "Not sure" — we'll flag it as an area to investigate.
@@ -1101,36 +1146,12 @@ CRITICAL REQUIREMENTS:
           </div>
           
           {/* Category Tabs */}
-          <div style={{
-            display: 'flex',
-            gap: '0.5rem',
-            marginBottom: '1.5rem',
-            overflowX: 'auto',
-            paddingBottom: '0.5rem'
-          }}>
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
             {categories.map((cat, i) => {
               const catAnswered = cat.questions.filter(q => answers[q.id]).length;
               const catComplete = catAnswered === cat.questions.length;
               return (
-                <button
-                  key={cat.id}
-                  onClick={() => setCurrentCategory(i)}
-                  style={{
-                    background: currentCategory === i ? colors.primaryLight : colors.darkCard,
-                    border: `1px solid ${currentCategory === i ? colors.primaryBorder : 'transparent'}`,
-                    borderRadius: '100px',
-                    padding: '0.4rem 0.9rem',
-                    color: currentCategory === i ? colors.primary : colors.gray,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    fontSize: '0.8rem',
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem'
-                  }}
-                >
+                <button key={cat.id} onClick={() => setCurrentCategory(i)} style={{ background: currentCategory === i ? colors.primaryLight : colors.darkCard, border: `1px solid ${currentCategory === i ? colors.primaryBorder : 'transparent'}`, borderRadius: '100px', padding: '0.4rem 0.9rem', color: currentCategory === i ? colors.primary : colors.gray, cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   {cat.icon} {cat.title}
                   {catComplete && <span style={{ color: '#22c55e' }}>✓</span>}
                 </button>
@@ -1141,67 +1162,18 @@ CRITICAL REQUIREMENTS:
           {/* Questions */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {currentCategoryData.questions.map((question, qIndex) => (
-              <div
-                key={question.id}
-                style={{
-                  background: colors.darkCard,
-                  border: `1px solid ${colors.grayDark}22`,
-                  borderRadius: '12px',
-                  padding: '1.25rem'
-                }}
-              >
-                <p style={{ marginBottom: '0.5rem', fontWeight: 500, lineHeight: 1.5, fontSize: '0.95rem' }}>
-                  {qIndex + 1}. {question.text}
-                </p>
-                
+              <div key={question.id} style={{ background: colors.darkCard, border: `1px solid ${colors.grayDark}22`, borderRadius: '12px', padding: '1.25rem' }}>
+                <p style={{ marginBottom: '0.5rem', fontWeight: 500, lineHeight: 1.5, fontSize: '0.95rem' }}>{qIndex + 1}. {question.text}</p>
                 {question.helper && (
-                  <p style={{ fontSize: '0.8rem', color: colors.gray, marginBottom: '1rem', lineHeight: 1.5, paddingLeft: '0.5rem', borderLeft: `2px solid ${colors.grayDark}44` }}>
-                    {question.helper}
-                  </p>
+                  <p style={{ fontSize: '0.8rem', color: colors.gray, marginBottom: '1rem', lineHeight: 1.5, paddingLeft: '0.5rem', borderLeft: `2px solid ${colors.grayDark}44` }}>{question.helper}</p>
                 )}
-                
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {question.options.map((option, optIndex) => {
                     const isSelected = answers[question.id] === option;
                     return (
-                      <button
-                        key={optIndex}
-                        onClick={() => setAnswers(prev => ({ ...prev, [question.id]: option }))}
-                        style={{
-                          width: '100%',
-                          textAlign: 'left',
-                          padding: '0.75rem 1rem',
-                          background: isSelected ? colors.primaryLight : 'transparent',
-                          border: `1px solid ${isSelected ? colors.primary : colors.grayDark}44`,
-                          borderRadius: '8px',
-                          color: isSelected ? colors.white : colors.grayLight,
-                          cursor: 'pointer',
-                          fontFamily: 'inherit',
-                          fontSize: '0.9rem',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        <span style={{
-                          display: 'inline-block',
-                          width: '18px',
-                          height: '18px',
-                          borderRadius: '50%',
-                          border: `2px solid ${isSelected ? colors.primary : colors.grayDark}`,
-                          marginRight: '0.75rem',
-                          verticalAlign: 'middle',
-                          background: isSelected ? colors.primary : 'transparent',
-                          position: 'relative'
-                        }}>
-                          {isSelected && (
-                            <span style={{
-                              position: 'absolute',
-                              top: '50%',
-                              left: '50%',
-                              transform: 'translate(-50%, -50%)',
-                              color: colors.white,
-                              fontSize: '10px'
-                            }}>✓</span>
-                          )}
+                      <button key={optIndex} onClick={() => handleAnswer(question.id, option)} style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: isSelected ? colors.primaryLight : 'transparent', border: `1px solid ${isSelected ? colors.primary : colors.grayDark}44`, borderRadius: '8px', color: isSelected ? colors.white : colors.grayLight, cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem', transition: 'all 0.15s ease' }}>
+                        <span style={{ display: 'inline-block', width: '18px', height: '18px', borderRadius: '50%', border: `2px solid ${isSelected ? colors.primary : colors.grayDark}`, marginRight: '0.75rem', verticalAlign: 'middle', background: isSelected ? colors.primary : 'transparent', position: 'relative' }}>
+                          {isSelected && <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: colors.white, fontSize: '10px' }}>✓</span>}
                         </span>
                         {option}
                       </button>
@@ -1214,59 +1186,16 @@ CRITICAL REQUIREMENTS:
           
           {/* Navigation */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem', gap: '1rem' }}>
-            <button
-              onClick={() => currentCategory > 0 ? setCurrentCategory(currentCategory - 1) : setCurrentStep('business')}
-              style={{
-                background: 'transparent',
-                border: `1px solid ${colors.grayDark}`,
-                borderRadius: '8px',
-                padding: '0.75rem 1.5rem',
-                color: colors.grayLight,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                fontSize: '0.9rem'
-              }}
-            >
+            <button onClick={() => currentCategory > 0 ? setCurrentCategory(currentCategory - 1) : setCurrentStep('business')} style={{ background: 'transparent', border: `1px solid ${colors.grayDark}`, borderRadius: '8px', padding: '0.75rem 1.5rem', color: colors.grayLight, cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem' }}>
               ← Back
             </button>
             
             {currentCategory < categories.length - 1 ? (
-              <button
-                onClick={() => setCurrentCategory(currentCategory + 1)}
-                disabled={!allQuestionsAnswered}
-                style={{
-                  background: allQuestionsAnswered ? colors.primary : colors.darkCard,
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '0.75rem 1.5rem',
-                  color: allQuestionsAnswered ? colors.white : colors.grayDark,
-                  cursor: allQuestionsAnswered ? 'pointer' : 'not-allowed',
-                  fontFamily: 'inherit',
-                  fontSize: '0.9rem',
-                  fontWeight: 600
-                }}
-              >
+              <button onClick={() => setCurrentCategory(currentCategory + 1)} disabled={!allQuestionsAnswered} style={{ background: allQuestionsAnswered ? colors.primary : colors.darkCard, border: 'none', borderRadius: '8px', padding: '0.75rem 1.5rem', color: allQuestionsAnswered ? colors.white : colors.grayDark, cursor: allQuestionsAnswered ? 'pointer' : 'not-allowed', fontFamily: 'inherit', fontSize: '0.9rem', fontWeight: 600 }}>
                 {allQuestionsAnswered ? 'Next Category →' : `Answer all ${currentCategoryData.questions.length} questions`}
               </button>
             ) : (
-              <button
-                onClick={() => {
-                  generateReportAPI();
-                  setCurrentStep('preview');
-                }}
-                disabled={answeredQuestions < totalQuestions}
-                style={{
-                  background: answeredQuestions >= totalQuestions ? colors.primary : colors.darkCard,
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '0.75rem 1.5rem',
-                  color: answeredQuestions >= totalQuestions ? colors.white : colors.grayDark,
-                  cursor: answeredQuestions >= totalQuestions ? 'pointer' : 'not-allowed',
-                  fontFamily: 'inherit',
-                  fontSize: '0.9rem',
-                  fontWeight: 600
-                }}
-              >
+              <button onClick={() => setCurrentStep('preview')} disabled={answeredQuestions < totalQuestions} style={{ background: answeredQuestions >= totalQuestions ? colors.primary : colors.darkCard, border: 'none', borderRadius: '8px', padding: '0.75rem 1.5rem', color: answeredQuestions >= totalQuestions ? colors.white : colors.grayDark, cursor: answeredQuestions >= totalQuestions ? 'pointer' : 'not-allowed', fontFamily: 'inherit', fontSize: '0.9rem', fontWeight: 600 }}>
                 {answeredQuestions >= totalQuestions ? 'See My Results →' : `Answer all questions (${answeredQuestions}/${totalQuestions})`}
               </button>
             )}
@@ -1276,139 +1205,50 @@ CRITICAL REQUIREMENTS:
     );
   }
 
-  // PREVIEW SCREEN - Assessment Complete with blurred score
+  // PREVIEW SCREEN
   if (currentStep === 'preview') {
-    // Calculate estimates from answers
-    const calculateEstimates = () => {
-      let critical = 0;
-      let attention = 0;
-      let good = 0;
-      
-      Object.values(answers).forEach(answer => {
-        const lower = answer.toLowerCase();
-        if (lower.includes('no') || lower.includes('never') || lower.includes('not sure') || lower.includes('none') || lower.includes("don't") || lower.includes('varies')) {
-          critical++;
-        } else if (lower.includes('some') || lower.includes('partial') || lower.includes('occasionally') || lower.includes('informal') || lower.includes('think so') || lower.includes('usually')) {
-          attention++;
-        } else {
-          good++;
-        }
-      });
-      
-      return { critical, attention, good };
-    };
-    
-    const estimates = calculateEstimates();
-    const displayData = pendingReport ? {
-      critical: pendingReport.criticalCount || 0,
-      attention: pendingReport.attentionCount || 0,
-      good: pendingReport.goodCount || 0
-    } : estimates;
+    const { highRisk, mediumRisk, lowRisk, iqScore } = calculateRiskScore();
+    const displayData = pendingReport ? { critical: pendingReport.criticalCount || highRisk, attention: pendingReport.attentionCount || mediumRisk, good: pendingReport.goodCount || lowRisk } : { critical: highRisk, attention: mediumRisk, good: lowRisk };
 
     return (
       <div style={baseStyles}>
         <style>{globalStyles}</style>
-        
         <div style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem 1rem' }}>
-          {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: colors.primary, marginBottom: '0.5rem' }}>
-              Assessment Complete!
-            </h1>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: colors.primary, marginBottom: '0.5rem' }}>Assessment Complete!</h1>
             <p style={{ color: colors.gray, fontSize: '0.9rem' }}>{businessInfo.name}</p>
           </div>
 
           {/* Locked Score Card */}
-          <div style={{
-            background: colors.darkCard,
-            borderRadius: '16px',
-            padding: '2rem',
-            textAlign: 'center',
-            marginBottom: '1.5rem',
-            border: `2px solid ${colors.primary}`,
-            position: 'relative'
-          }}>
-            <div style={{ fontSize: '4rem', fontWeight: 700, color: colors.primary, filter: 'blur(8px)' }}>
-              {pendingReport?.score || 324}
-            </div>
+          <div style={{ background: colors.darkCard, borderRadius: '16px', padding: '2rem', textAlign: 'center', marginBottom: '1.5rem', border: `2px solid ${colors.primary}`, position: 'relative' }}>
+            <div style={{ fontSize: '4rem', fontWeight: 700, color: colors.primary, filter: 'blur(8px)' }}>{pendingReport?.score || iqScore || 324}</div>
             <div style={{ color: colors.gray, fontSize: '1rem', marginBottom: '1rem', filter: 'blur(4px)' }}>out of 500</div>
-            <div style={{
-              display: 'inline-block',
-              background: '#f59e0b',
-              color: 'white',
-              padding: '0.5rem 1.5rem',
-              borderRadius: '20px',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              filter: 'blur(4px)'
-            }}>
-              {pendingReport?.riskLevel || 'CALCULATING'}
-            </div>
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              background: 'rgba(0,0,0,0.8)',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '8px',
-              border: `1px solid ${colors.primary}`
-            }}>
+            <div style={{ display: 'inline-block', background: '#f59e0b', color: 'white', padding: '0.5rem 1.5rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 600, filter: 'blur(4px)' }}>{pendingReport?.riskLevel || 'CALCULATING'}</div>
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.8)', padding: '0.75rem 1.5rem', borderRadius: '8px', border: `1px solid ${colors.primary}` }}>
               <span style={{ fontSize: '1.5rem' }}>🔒</span>
               <span style={{ color: colors.white, marginLeft: '0.5rem', fontWeight: 600 }}>Unlock Your Score</span>
             </div>
           </div>
 
-          {/* Stats - visible */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '1rem',
-            marginBottom: '1.5rem',
-            flexWrap: 'wrap'
-          }}>
-            <div style={{
-              background: '#fee2e2',
-              padding: '1rem 1.5rem',
-              borderRadius: '10px',
-              textAlign: 'center',
-              minWidth: '100px'
-            }}>
+          {/* Stats */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+            <div style={{ background: '#fee2e2', padding: '1rem 1.5rem', borderRadius: '10px', textAlign: 'center', minWidth: '100px' }}>
               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#dc2626' }}>{displayData.critical}</div>
               <div style={{ fontSize: '0.75rem', color: '#991b1b' }}>Critical</div>
             </div>
-            <div style={{
-              background: '#fef3c7',
-              padding: '1rem 1.5rem',
-              borderRadius: '10px',
-              textAlign: 'center',
-              minWidth: '100px'
-            }}>
+            <div style={{ background: '#fef3c7', padding: '1rem 1.5rem', borderRadius: '10px', textAlign: 'center', minWidth: '100px' }}>
               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f59e0b' }}>{displayData.attention}</div>
               <div style={{ fontSize: '0.75rem', color: '#92400e' }}>Attention</div>
             </div>
-            <div style={{
-              background: '#d1fae5',
-              padding: '1rem 1.5rem',
-              borderRadius: '10px',
-              textAlign: 'center',
-              minWidth: '100px'
-            }}>
+            <div style={{ background: '#d1fae5', padding: '1rem 1.5rem', borderRadius: '10px', textAlign: 'center', minWidth: '100px' }}>
               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#10b981' }}>{displayData.good}</div>
               <div style={{ fontSize: '0.75rem', color: '#065f46' }}>Good</div>
             </div>
           </div>
 
-          {/* Sample Report Preview - BLURRED */}
-          <div style={{
-            background: colors.darkCard,
-            borderRadius: '12px',
-            padding: '1.5rem',
-            marginBottom: '1.5rem'
-          }}>
-            <h3 style={{ color: colors.white, fontSize: '1rem', marginBottom: '1rem' }}>
-              📋 Sample from your report:
-            </h3>
+          {/* Sample Preview - BLURRED */}
+          <div style={{ background: colors.darkCard, borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ color: colors.white, fontSize: '1rem', marginBottom: '1rem' }}>📋 Sample from your report:</h3>
             <div style={{ position: 'relative' }}>
               <div style={{ filter: 'blur(3px)', pointerEvents: 'none' }}>
                 <div style={{ background: colors.darkBg, padding: '0.75rem', borderRadius: '8px', marginBottom: '0.5rem', borderLeft: '3px solid #dc2626' }}>
@@ -1428,17 +1268,8 @@ CRITICAL REQUIREMENTS:
           </div>
 
           {/* What's in the Report */}
-          <div style={{
-            background: colors.primaryLight,
-            border: `1px solid ${colors.primaryBorder}`,
-            borderRadius: '12px',
-            padding: '1.25rem',
-            marginBottom: '1.5rem',
-            textAlign: 'center'
-          }}>
-            <p style={{ fontWeight: 600, color: colors.white, marginBottom: '0.75rem', fontSize: '0.95rem' }}>
-              Your personalized report includes:
-            </p>
+          <div style={{ background: colors.primaryLight, border: `1px solid ${colors.primaryBorder}`, borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+            <p style={{ fontWeight: 600, color: colors.white, marginBottom: '0.75rem', fontSize: '0.95rem' }}>Your personalized report includes:</p>
             <div style={{ fontSize: '0.9rem', color: colors.grayLight, lineHeight: 1.9 }}>
               <div><span style={{ color: colors.primary }}>✓</span> Your exact HRShieldIQ™ score</div>
               <div><span style={{ color: colors.primary }}>✓</span> Detailed analysis of all 25 compliance areas</div>
@@ -1450,31 +1281,11 @@ CRITICAL REQUIREMENTS:
           </div>
 
           {/* Unlock Button */}
-          <button
-            onClick={() => setShowPaywall(true)}
-            style={{
-              width: '100%',
-              background: colors.primary,
-              border: 'none',
-              borderRadius: '10px',
-              padding: '1rem',
-              color: colors.white,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              fontSize: '1.1rem',
-              fontWeight: 600,
-              boxShadow: `0 4px 20px ${colors.primary}40`,
-              marginBottom: '1rem'
-            }}
-          >
-            🔓 Unlock Full Report - $29.99
+          <button onClick={() => setShowPaywall(true)} style={{ width: '100%', background: colors.primary, border: 'none', borderRadius: '10px', padding: '1rem', color: colors.white, cursor: 'pointer', fontFamily: 'inherit', fontSize: '1.1rem', fontWeight: 600, boxShadow: `0 4px 20px ${colors.primary}40`, marginBottom: '1rem' }}>
+            🔓 Unlock Full Report $29.99
           </button>
-
-          <p style={{ textAlign: 'center', color: colors.grayDark, fontSize: '0.75rem' }}>
-            One-time purchase • Instant access • PDF download included
-          </p>
+          <p style={{ textAlign: 'center', color: colors.grayDark, fontSize: '0.75rem' }}>One-time purchase • Instant access • PDF download included</p>
           
-          {/* Footer */}
           <div style={{ textAlign: 'center', marginTop: '2rem', paddingTop: '1rem', borderTop: `1px solid ${colors.grayDark}33` }}>
             <p style={{ fontSize: '0.7rem', color: colors.grayDark }}>
               <a href="/privacy.html" style={{ color: colors.grayDark, textDecoration: 'none', marginRight: '1rem' }}>Privacy Policy</a>
@@ -1485,225 +1296,100 @@ CRITICAL REQUIREMENTS:
 
         {/* Paywall Modal */}
         {showPaywall && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.9)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1rem',
-            zIndex: 1000,
-            overflowY: 'auto'
-          }}>
-            <div style={{
-              background: colors.darkBg,
-              border: `1px solid ${colors.grayDark}44`,
-              borderRadius: '16px',
-              padding: '1.5rem',
-              maxWidth: '420px',
-              width: '100%',
-              position: 'relative',
-              margin: '1rem 0'
-            }}>
-              <button
-                onClick={() => setShowPaywall(false)}
-                style={{
-                  position: 'absolute',
-                  top: '1rem',
-                  right: '1rem',
-                  background: 'transparent',
-                  border: 'none',
-                  color: colors.gray,
-                  cursor: 'pointer',
-                  fontSize: '1.5rem',
-                  lineHeight: 1
-                }}
-              >
-                ×
-              </button>
-
-              {/* Score + Title */}
-              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-                  Your Results Are Ready
-                </h3>
-                
-                {reportReady && pendingReport && (
-                  <div style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    background: colors.darkCard,
-                    border: `2px solid ${colors.primary}`,
-                    borderRadius: '8px',
-                    padding: '0.5rem 1rem'
-                  }}>
-                    <span style={{ fontSize: '1.25rem', fontWeight: 700, color: colors.primary }}>{pendingReport.score}</span>
-                    <span style={{ color: colors.gray }}>/500</span>
-                    <span style={{ 
-                      color: pendingReport.riskLevel === 'HIGH RISK' ? '#ef4444' : 
-                             pendingReport.riskLevel === 'ELEVATED RISK' ? '#eab308' : '#22c55e', 
-                      fontWeight: 600, 
-                      fontSize: '0.8rem' 
-                    }}>• {pendingReport.riskLevel}</span>
-                    <span style={{ color: colors.gray, fontSize: '0.75rem' }}>({pendingReport.criticalCount} critical)</span>
-                  </div>
-                )}
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '0.5rem', overflowY: 'auto' }}>
+            <div style={{ background: colors.black, borderRadius: '16px', padding: 'clamp(1rem, 4vw, 2rem)', maxWidth: '450px', width: '100%', maxHeight: '95vh', overflowY: 'auto', border: `1px solid ${colors.grayDark}33`, margin: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: colors.white }}>Unlock Your Report</h2>
+                <button onClick={() => setShowPaywall(false)} style={{ background: 'none', border: 'none', color: colors.gray, cursor: 'pointer', fontSize: '1.5rem' }}>×</button>
               </div>
-              
-              {/* What's Included */}
-              <div style={{ 
-                fontSize: '0.75rem', 
-                color: colors.grayLight, 
-                marginBottom: '1rem',
-                lineHeight: 1.6
-              }}>
-                {[
-                  'HRShieldIQ™ score with risk level',
-                  'All 25 areas analyzed individually',
-                  'Your answer + why it matters + what to do',
-                  'Industry-specific compliance context',
-                  '30-day action roadmap'
-                ].map((item, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span style={{ color: colors.primary }}>✓</span> {item}
-                  </div>
-                ))}
+
+              {/* Summary */}
+              <div style={{ background: colors.darkCard, borderRadius: '10px', padding: '1rem', marginBottom: '1.5rem' }}>
+                <p style={{ color: colors.gray, fontSize: '0.85rem', textAlign: 'center', marginBottom: '0.5rem' }}>We found issues in your assessment:</p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
+                  <div style={{ textAlign: 'center' }}><span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#dc2626' }}>{displayData.critical}</span><span style={{ fontSize: '0.7rem', color: colors.gray, display: 'block' }}>Critical</span></div>
+                  <div style={{ textAlign: 'center' }}><span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f59e0b' }}>{displayData.attention}</span><span style={{ fontSize: '0.7rem', color: colors.gray, display: 'block' }}>Attention</span></div>
+                  <div style={{ textAlign: 'center' }}><span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#10b981' }}>{displayData.good}</span><span style={{ fontSize: '0.7rem', color: colors.gray, display: 'block' }}>Good</span></div>
+                </div>
               </div>
 
               {/* Plan Selection */}
               <div style={{ marginBottom: '1rem' }}>
-                <div style={{ fontSize: '0.75rem', color: colors.gray, marginBottom: '0.5rem', textAlign: 'center' }}>
-                  Choose your plan:
-                </div>
+                <p style={{ fontSize: '0.8rem', color: colors.gray, marginBottom: '0.5rem' }}>Select your plan:</p>
                 
-                <div style={{
-                  background: colors.primaryLight,
-                  border: `2px solid ${colors.primary}`,
-                  borderRadius: '8px',
-                  padding: '0.75rem',
-                  marginBottom: '0.4rem',
-                  cursor: 'pointer'
-                }}>
+                <div onClick={() => setSelectedPlan('onetime')} style={{ background: selectedPlan === 'onetime' ? colors.primaryLight : colors.darkCard, border: `2px solid ${selectedPlan === 'onetime' ? colors.primary : colors.grayDark}`, borderRadius: '10px', padding: '1rem', marginBottom: '0.5rem', cursor: 'pointer' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                      <div style={{
-                        width: '16px',
-                        height: '16px',
-                        borderRadius: '50%',
-                        border: `2px solid ${colors.primary}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: colors.primary }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: `2px solid ${selectedPlan === 'onetime' ? colors.primary : colors.grayDark}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {selectedPlan === 'onetime' && <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: colors.primary }} />}
                       </div>
-                      <div style={{ fontWeight: 600, color: colors.white, fontSize: '0.9rem' }}>Full Report</div>
+                      <div><span style={{ color: colors.white, fontWeight: 600 }}>One-Time Report</span><span style={{ color: colors.gray, fontSize: '0.8rem', display: 'block' }}>Full assessment with PDF</span></div>
                     </div>
-                    <div style={{ fontWeight: 700, color: colors.primary, fontSize: '1rem' }}>$29.99</div>
+                    <div style={{ textAlign: 'right' }}>
+                      {appliedDiscount > 0 && appliedDiscount < 100 && <span style={{ color: colors.gray, textDecoration: 'line-through', fontSize: '0.8rem', display: 'block' }}>$29.99</span>}
+                      <span style={{ color: colors.primary, fontWeight: 700, fontSize: '1.1rem' }}>${discountedPrice.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Email */}
-              <div style={{ marginBottom: '0.75rem' }}>
-                <label style={{ 
-                  display: 'block', 
-                  marginBottom: '0.35rem', 
-                  fontSize: '0.8rem',
-                  color: colors.grayLight
-                }}>
-                  Email address <span style={{ color: colors.primary }}>*</span>
-                </label>
-                <input
-                  type="email"
-                  value={businessInfo.email}
-                  onChange={e => setBusinessInfo(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="you@company.com"
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem 0.75rem',
-                    background: colors.darkCard,
-                    border: `1px solid ${colors.grayDark}44`,
-                    borderRadius: '6px',
-                    color: colors.white,
-                    fontSize: '0.95rem',
-                    outline: 'none'
-                  }}
-                  onFocus={e => e.target.style.borderColor = colors.primary}
-                  onBlur={e => e.target.style.borderColor = `${colors.grayDark}44`}
-                />
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ fontSize: '0.85rem', color: colors.grayLight, marginBottom: '0.35rem', display: 'block' }}>Email for report delivery <span style={{ color: colors.primary }}>*</span></label>
+                <input type="email" placeholder="you@company.com" value={businessInfo.email} onChange={e => setBusinessInfo(prev => ({ ...prev, email: e.target.value }))} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: `1px solid ${colors.grayDark}`, background: colors.darkCard, color: colors.white, fontFamily: 'inherit', fontSize: '1rem', boxSizing: 'border-box' }} />
               </div>
 
               {/* Promo Code */}
-              <div style={{ marginBottom: '0.75rem' }}>
+              <div style={{ marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <input
-                    type="text"
-                    value={promoCode}
-                    onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); }}
-                    placeholder="Promo code (optional)"
-                    style={{
-                      flex: 1,
-                      padding: '0.6rem 0.75rem',
-                      background: colors.darkCard,
-                      border: `1px solid ${colors.grayDark}44`,
-                      borderRadius: '6px',
-                      color: colors.white,
-                      fontSize: '0.85rem',
-                      outline: 'none'
-                    }}
-                  />
-                  <button
-                    onClick={() => {
-                      if (validPromoCodes.includes(promoCode)) {
-                        setPaymentComplete(true);
-                        setShowPaywall(false);
-                        generateReport(true);
+                  <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); }} placeholder="Promo code (optional)" style={{ flex: 1, padding: '0.6rem 0.75rem', borderRadius: '6px', border: `1px solid ${colors.grayDark}`, background: colors.darkCard, color: colors.white, fontFamily: 'inherit', fontSize: '0.85rem' }} />
+                  <button onClick={async () => {
+                    if (!businessInfo.email || !businessInfo.email.includes('@')) { setPromoError('Enter email first'); return; }
+                    if (!promoCode.trim()) { return; }
+                    try {
+                      const response = await fetch('/api/validate-promo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: promoCode }) });
+                      const data = await response.json();
+                      if (data.valid) {
+                        setAppliedDiscount(data.discount);
+                        setDiscountedPrice(data.finalPrice);
+                        if (data.discount === 100) {
+                          setPromoError('');
+                          setPaymentComplete(true);
+                          setShowPaywall(false);
+                          await generateReport();
+                        } else {
+                          setPromoError(`✓ ${data.discount}% off! Pay $${data.finalPrice.toFixed(2)}`);
+                        }
                       } else {
                         setPromoError('Invalid code');
                       }
-                    }}
-                    style={{
-                      background: colors.primary,
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '0.6rem 1rem',
-                      color: colors.white,
-                      cursor: 'pointer',
-                      fontWeight: 500,
-                      fontSize: '0.85rem'
-                    }}
-                  >
+                    } catch (error) {
+                      setPromoError('Error validating code');
+                    }
+                  }} style={{ background: colors.primary, border: 'none', borderRadius: '6px', padding: '0.6rem 1rem', color: colors.white, cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.85rem', fontWeight: 600 }}>
                     Apply
                   </button>
                 </div>
-                {promoError && <p style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.25rem' }}>{promoError}</p>}
+                {promoError && <p style={{ color: promoError.startsWith('✓') ? '#22c55e' : '#dc2626', fontSize: '0.75rem', marginTop: '0.25rem', fontWeight: promoError.startsWith('✓') ? 600 : 400 }}>{promoError}</p>}
               </div>
+
+              {/* PayPal Button */}
+              <div ref={paypalRef} style={{ marginBottom: '0.5rem', minHeight: '150px', opacity: businessInfo.email && businessInfo.email.includes('@') ? 1 : 0.5, pointerEvents: businessInfo.email && businessInfo.email.includes('@') ? 'auto' : 'none', display: paypalLoading ? 'none' : 'block' }}></div>
               
-              {/* PayPal */}
-              {businessInfo.email && businessInfo.email.includes('@') ? (
-                <div>
-                  {paypalLoading && (
-                    <div style={{ textAlign: 'center', padding: '0.75rem', color: colors.gray, fontSize: '0.85rem' }}>
-                      Loading payment options...
-                    </div>
-                  )}
-                  <div ref={paypalRef} style={{ minHeight: paypalLoading ? '0' : '45px' }}></div>
+              {paypalLoading && businessInfo.email && businessInfo.email.includes('@') && (
+                <div style={{ textAlign: 'center', padding: '2rem', minHeight: '150px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '30px', height: '30px', border: `3px solid ${colors.darkCard}`, borderTop: `3px solid ${colors.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '0.75rem' }} />
+                  <p style={{ fontSize: '0.85rem', color: colors.gray }}>Loading payment options...</p>
+                  <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
                 </div>
-              ) : (
-                <p style={{ textAlign: 'center', color: colors.primary, fontSize: '0.8rem' }}>
-                  ↑ Enter email to continue
-                </p>
               )}
+
+              {!businessInfo.email || !businessInfo.email.includes('@') ? (
+                <p style={{ textAlign: 'center', fontSize: '0.75rem', color: colors.primary, marginBottom: '0.35rem' }}>↑ Enter email to continue</p>
+              ) : null}
               
-              {/* Help */}
-              <p style={{ textAlign: 'center', fontSize: '0.75rem', color: colors.grayDark, marginTop: '1rem' }}>
-                Questions? info@techshieldkc.com
+              <p style={{ textAlign: 'center', fontSize: '0.7rem', color: colors.grayDark }}>
+                Secure payment via PayPal • <a href="mailto:info@techshieldkc.com" style={{ color: colors.gray }}>Questions?</a>
               </p>
             </div>
           </div>
@@ -1713,24 +1399,19 @@ CRITICAL REQUIREMENTS:
   }
 
   // LOADING SCREEN
-  if (loading) {
+  if (loading && currentStep !== 'report') {
     return (
-      <div style={baseStyles}>
-        <style>{globalStyles}</style>
-        <div style={{ maxWidth: '400px', margin: '0 auto', textAlign: 'center', paddingTop: '4rem' }}>
-          <div style={{
-            width: '60px',
-            height: '60px',
-            border: `3px solid ${colors.darkCard}`,
-            borderTopColor: colors.primary,
-            borderRadius: '50%',
-            margin: '0 auto 1.5rem',
-            animation: 'spin 1s linear infinite'
-          }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Analyzing Your HR Compliance...</h2>
-          <p style={{ color: colors.gray, fontSize: '0.9rem' }}>Building your personalized report</p>
+      <div style={{ ...baseStyles, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', minHeight: '100vh' }}>
+        <style>{`${globalStyles} @keyframes spin { to { transform: rotate(360deg); } } @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }`}</style>
+        <div style={{ width: '70px', height: '70px', border: `5px solid ${colors.darkCard}`, borderTopColor: colors.primary, borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '2rem' }} />
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem', color: colors.white }}>Building Your Report</h2>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
+          {[0, 1, 2].map(i => (
+            <div key={i} style={{ width: '12px', height: '12px', backgroundColor: colors.primary, borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: `${i * 0.16}s` }} />
+          ))}
         </div>
+        <p style={{ color: colors.gray, fontSize: '0.95rem', marginBottom: '0.5rem' }}>Analyzing your {businessInfo.industry || 'business'} compliance...</p>
+        <p style={{ color: colors.grayDark, fontSize: '0.85rem' }}>This usually takes 10-15 seconds</p>
       </div>
     );
   }
@@ -1738,384 +1419,132 @@ CRITICAL REQUIREMENTS:
   // REPORT SCREEN
   if (currentStep === 'report' && report) {
     const downloadPdf = () => {
+      setReportSaved(true);
       const reportWindow = window.open('', '_blank');
-      if (!reportWindow) return;
+      if (!reportWindow) { alert('Please allow popups to download your PDF report'); return; }
       
       const r = report;
+      const safeBusinessName = escapeHtml(businessInfo.name);
+      const safeIndustry = escapeHtml(businessInfo.industry);
       
-      // Priorities section
-      const prioritiesHtml = (r.priorities || []).map((p, i) => 
-        `<div class="priority-box">
-          <h4>${i+1}. ${p.title}</h4>
-          <p>${p.reason}</p>
-        </div>`
-      ).join('');
+      const prioritiesHtml = (r.priorities || []).map((p, i) => `<div class="priority-box"><h4>${i+1}. ${escapeHtml(p.title || '')}</h4><p>${escapeHtml(p.reason || '')}</p></div>`).join('');
       
-      // Critical issues section  
-      const criticalHtml = (r.criticalIssues || []).length > 0 ? 
-        '<h2>🔴 Critical Issues</h2>' + r.criticalIssues.map(issue => 
-          `<div class="issue-card critical">
-            <div class="issue-header">
-              <span class="issue-title">${issue.topic}</span>
-              <span class="badge critical">CRITICAL</span>
-            </div>
-            <div class="issue-answer">"${issue.answer}"</div>
-            <div class="issue-content">
-              <p><strong>Risk:</strong> ${issue.risk}</p>
-              <p><strong>Fix:</strong> ${issue.fix}</p>
-              <p><strong>Effort:</strong> ⏱️ ${issue.effort}</p>
-            </div>
-          </div>`
-        ).join('') : '';
+      const criticalHtml = (r.criticalIssues || []).length > 0 ? '<h2>🔴 Critical Issues</h2>' + r.criticalIssues.map(issue => `<div class="issue-card critical"><div class="issue-header"><span class="issue-title">${escapeHtml(issue.topic || '')}</span><span class="badge critical">CRITICAL</span></div><div class="issue-answer">"${escapeHtml(issue.answer || '')}"</div><div class="issue-content"><p><strong>Risk:</strong> ${escapeHtml(issue.risk || '')}</p><p><strong>Fix:</strong> ${escapeHtml(issue.fix || '')}</p><p><strong>Effort:</strong> ⏱️ ${escapeHtml(issue.effort || '')}</p></div></div>`).join('') : '';
       
-      // Attention issues section
-      const attentionHtml = (r.attentionIssues || []).length > 0 ?
-        '<h2>🟡 Items Needing Attention</h2>' + r.attentionIssues.map(issue =>
-          `<div class="issue-card attention">
-            <div class="issue-header">
-              <span class="issue-title">${issue.topic}</span>
-              <span class="badge attention">NEEDS ATTENTION</span>
-            </div>
-            <div class="issue-answer">"${issue.answer}"</div>
-            <div class="issue-content">
-              <p><strong>Risk:</strong> ${issue.risk}</p>
-              <p><strong>Fix:</strong> ${issue.fix}</p>
-              <p><strong>Effort:</strong> ⏱️ ${issue.effort}</p>
-            </div>
-          </div>`
-        ).join('') : '';
+      const attentionHtml = (r.attentionIssues || []).length > 0 ? '<h2>🟡 Items Needing Attention</h2>' + r.attentionIssues.map(issue => `<div class="issue-card attention"><div class="issue-header"><span class="issue-title">${escapeHtml(issue.topic || '')}</span><span class="badge attention">ATTENTION</span></div><div class="issue-answer">"${escapeHtml(issue.answer || '')}"</div><div class="issue-content"><p><strong>Risk:</strong> ${escapeHtml(issue.risk || '')}</p><p><strong>Fix:</strong> ${escapeHtml(issue.fix || '')}</p><p><strong>Effort:</strong> ⏱️ ${escapeHtml(issue.effort || '')}</p></div></div>`).join('') : '';
       
-      // Good practices section - handle both old (string) and new (object) formats
-      const goodHtml = (r.goodPractices || []).length > 0 ?
-        `<div class="good-section">
-          <h3>✅ What You're Doing Well</h3>
-          <div class="good-list">
-            ${r.goodPractices.map(p => {
-              if (typeof p === 'string') {
-                return `<div class="good-item"><span class="check">✓</span><span class="good-text">${p}</span></div>`;
-              } else {
-                return `<div class="good-item"><span class="check">✓</span><span class="good-text">${p.practice}</span><span class="good-benefit">${p.benefit}</span></div>`;
-              }
-            }).join('')}
-          </div>
-        </div>` : '';
+      const goodHtml = (r.goodPractices || []).length > 0 ? '<div class="good-section"><h3>✅ What You\'re Doing Well</h3><div class="good-grid">' + r.goodPractices.map(p => `<div class="good-item"><span class="check">✓</span>${escapeHtml(typeof p === 'string' ? p : (p.practice || ''))}</div>`).join('') + '</div></div>' : '';
       
-      // Action plan lists
-      const week1 = (r.actionPlan?.week1 || []).map(t => `<li>${t}</li>`).join('');
-      const week2 = (r.actionPlan?.week2to4 || []).map(t => `<li>${t}</li>`).join('');
-      const ongoing = (r.actionPlan?.ongoing || []).map(t => `<li>${t}</li>`).join('');
+      const week1 = (r.actionPlan?.week1 || []).map(t => `<li>${escapeHtml(t)}</li>`).join('');
+      const week2 = (r.actionPlan?.week2to4 || []).map(t => `<li>${escapeHtml(t)}</li>`).join('');
+      const ongoing = (r.actionPlan?.ongoing || []).map(t => `<li>${escapeHtml(t)}</li>`).join('');
       
-      const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>HRShieldIQ Report - ${businessInfo.name}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Segoe UI, Arial, sans-serif; max-width: 850px; margin: 0 auto; padding: 40px; background: #fff; color: #333; line-height: 1.6; font-size: 11pt; }
-    .download-bar { background: #2563EB; color: white; padding: 15px 20px; margin: -40px -40px 30px -40px; display: flex; justify-content: space-between; align-items: center; }
-    .download-bar button { background: white; color: #2563EB; border: none; padding: 10px 25px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; }
-    .header { text-align: center; margin-bottom: 30px; padding-bottom: 25px; border-bottom: 3px solid #2563EB; }
-    .logo { font-size: 32px; font-weight: bold; margin-bottom: 5px; }
-    .logo span { color: #2563EB; }
-    .header p { color: #666; margin: 5px 0; }
-    .header .meta { font-size: 10pt; color: #888; }
-    h2 { color: #333; font-size: 16pt; margin: 30px 0 15px; padding-bottom: 8px; border-bottom: 2px solid #2563EB; }
-    .score-box { background: #eff6ff; border: 3px solid #2563EB; padding: 30px; border-radius: 12px; text-align: center; margin: 25px 0; }
-    .score-number { font-size: 48pt; font-weight: bold; color: #2563EB; }
-    .score-label { font-size: 14pt; color: #666; margin-top: 5px; }
-    .score-calc { font-size: 10pt; color: #888; margin-top: 10px; }
-    .risk-level { display: inline-block; background: #f59e0b; color: white; padding: 8px 20px; border-radius: 20px; font-weight: 600; margin-top: 15px; }
-    .summary-table { display: flex; justify-content: center; gap: 30px; margin: 20px 0; flex-wrap: wrap; }
-    .summary-item { text-align: center; padding: 15px 25px; border-radius: 8px; min-width: 120px; }
-    .summary-item.critical { background: #fee2e2; }
-    .summary-item.attention { background: #fef3c7; }
-    .summary-item.good { background: #d1fae5; }
-    .summary-item .num { font-size: 28pt; font-weight: bold; }
-    .summary-item.critical .num { color: #dc2626; }
-    .summary-item.attention .num { color: #f59e0b; }
-    .summary-item.good .num { color: #10b981; }
-    .summary-item .label { font-size: 10pt; color: #666; }
-    .fraud-stat { background: #fee2e2; border: 2px solid #dc2626; border-radius: 12px; padding: 20px; margin: 25px 0; }
-    .fraud-stat h3 { color: #991b1b; margin: 0 0 12px; font-size: 13pt; text-align: center; }
-    .fraud-stat-content { background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #dc2626; }
-    .fraud-stat-content p { margin: 0 0 8px; color: #991b1b; font-weight: 600; font-size: 12pt; }
-    .fraud-stat-content .source { margin: 0; font-size: 9pt; color: #666; font-style: italic; }
-    .priority-box { background: #eff6ff; border-left: 4px solid #2563EB; padding: 20px; margin: 15px 0; border-radius: 0 8px 8px 0; }
-    .priority-box h4 { color: #2563EB; margin-bottom: 8px; }
-    .issue-card { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; margin: 15px 0; }
-    .issue-card.critical { border-left: 4px solid #dc2626; }
-    .issue-card.attention { border-left: 4px solid #f59e0b; }
-    .issue-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
-    .issue-title { font-weight: 600; color: #333; }
-    .badge { padding: 4px 12px; border-radius: 12px; font-size: 9pt; font-weight: 600; }
-    .badge.critical { background: #fee2e2; color: #dc2626; }
-    .badge.attention { background: #fef3c7; color: #b45309; }
-    .issue-answer { background: #f5f5f5; padding: 10px 15px; border-radius: 6px; font-style: italic; color: #666; margin: 10px 0; }
-    .issue-content p { margin: 8px 0; }
-    .good-section { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #10b981; border-radius: 12px; padding: 20px 25px; margin: 20px 0; }
-    .good-section h3 { color: #10b981; margin-bottom: 15px; font-size: 14pt; text-align: center; }
-    .good-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; }
-    .good-item { display: flex; align-items: center; gap: 8px; background: white; border: 1px solid #10b981; border-radius: 8px; padding: 10px 14px; }
-    .good-item .check { color: #10b981; font-weight: bold; font-size: 14pt; }
-    .good-text { font-size: 11pt; color: #166534; font-weight: 500; }
-    .action-plan { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #2563EB; padding: 25px; border-radius: 12px; margin: 25px 0; }
-    .action-plan h2 { color: #2563EB; border: none; margin: 0 0 15px; font-size: 16pt; text-align: center; }
-    .action-week { background: white; border-radius: 8px; padding: 15px 20px; margin: 12px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
-    .action-week h3 { color: #2563EB; font-size: 13pt; margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid #bfdbfe; }
-    .action-week ul { margin: 0; padding-left: 20px; }
-    .action-week li { margin: 8px 0; color: #333; font-size: 11pt; }
-    .share-box { background: #f0f9ff; border: 2px solid #0ea5e9; padding: 20px 25px; border-radius: 8px; margin: 20px 0; text-align: center; }
-    .share-box h3 { color: #0369a1; margin-bottom: 15px; font-size: 14pt; }
-    .share-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 25px; text-align: left; max-width: 650px; margin: 0 auto; }
-    .share-item { font-size: 11pt; color: #333; }
-    .consult-box { background: #eff6ff; border: 2px solid #2563EB; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
-    .consult-box h3 { color: #2563EB; margin-bottom: 8px; font-size: 14pt; }
-    .consult-box p { font-size: 11pt; color: #555; margin: 8px 0; }
-    .consult-box a { color: #2563EB; text-decoration: none; font-size: 14pt; font-weight: 600; }
-    .resources { background: #f0f9ff; border: 2px solid #0ea5e9; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
-    .resources h3 { color: #0369a1; margin-bottom: 12px; font-size: 14pt; }
-    .res-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-    .res-grid a { display: block; background: white; padding: 12px 10px; border-radius: 6px; color: #2563EB; text-decoration: none; font-size: 10pt; font-weight: 500; text-align: center; border: 1px solid #e0f2fe; }
-    .disclaimer { background: #f5f5f5; padding: 12px 15px; border-radius: 8px; font-size: 9pt; color: #666; margin: 20px 0; text-align: center; }
-    .footer { text-align: center; margin-top: 25px; padding-top: 15px; border-top: 2px solid #2563EB; color: #888; font-size: 9pt; }
-    .footer strong { color: #2563EB; }
-    @media print { .download-bar { display: none !important; } }
-  </style>
-</head>
-<body>
+      const riskColor = r.riskLevel === 'HIGH RISK' ? '#dc2626' : r.riskLevel === 'ELEVATED RISK' ? '#f59e0b' : r.riskLevel === 'MODERATE' ? '#3b82f6' : '#10b981';
 
-<div class="download-bar">
-  <span>📄 Your HRShieldIQ™ Report</span>
-  <button onclick="window.print()">🖨️ Save as PDF / Print</button>
-</div>
-
-<div class="header">
-  <div class="logo">HRShield<span>IQ</span>™</div>
-  <p>Employment Compliance Assessment</p>
-  <p class="meta">Prepared for: <strong>${businessInfo.name}</strong> | ${businessInfo.industry} | ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
-</div>
-
-<div class="score-box">
-  <div class="score-number">${r.score || 0}</div>
-  <div class="score-label">out of 500 points</div>
-  <div class="score-calc">25 questions × 20 points = 500 max</div>
-  <div class="risk-level" style="background:${r.riskLevel==='HIGH RISK'?'#dc2626':r.riskLevel==='ELEVATED RISK'?'#f59e0b':r.riskLevel==='MODERATE'?'#3b82f6':'#10b981'}">${r.riskLevel || 'ASSESSED'}</div>
-</div>
-
-<div class="summary-table">
-  <div class="summary-item critical">
-    <div class="num">${r.criticalCount || 0}</div>
-    <div class="label">Critical Issues</div>
-  </div>
-  <div class="summary-item attention">
-    <div class="num">${r.attentionCount || 0}</div>
-    <div class="label">Needs Attention</div>
-  </div>
-  <div class="summary-item good">
-    <div class="num">${r.goodCount || 0}</div>
-    <div class="label">Good Practices</div>
-  </div>
-</div>
-
-<div class="fraud-stat">
-  <h3>⚠️ ${businessInfo.industry} Industry Risk</h3>
-  <div class="fraud-stat-content">
-    <p>Employment lawsuits have increased 400% over the past 20 years. The EEOC recovered over $700 million for discrimination victims in 2024 alone.</p>
-    <p class="source">Source: EEOC Annual Performance Report 2024</p>
-  </div>
-</div>
-
-<h2>Executive Summary</h2>
-<p>${r.executiveSummary || 'Assessment completed. See details below.'}</p>
-
-<h2>Top 3 Priorities</h2>
-${prioritiesHtml}
-
-${criticalHtml}
-
-${attentionHtml}
-
-${goodHtml}
-
-<div class="action-plan">
-  <h2>🎯 Your 30-Day Action Plan</h2>
-  
-  <div class="action-week">
-    <h3>⚡ Week 1: Quick Wins</h3>
-    <ul>${week1 || '<li>Review critical issues above</li>'}</ul>
-  </div>
-  
-  <div class="action-week">
-    <h3>🔧 Week 2-4: Core Improvements</h3>
-    <ul>${week2 || '<li>Address attention items</li>'}</ul>
-  </div>
-  
-  <div class="action-week">
-    <h3>🔄 Ongoing</h3>
-    <ul>${ongoing || '<li>Annual compliance review</li>'}</ul>
-  </div>
-</div>
-
-<div class="share-box">
-  <h3>📤 Who to Share This Report With</h3>
-  <div class="share-list">
-    <div class="share-item"><strong>Employment Attorney</strong> - Handbook & policy review</div>
-    <div class="share-item"><strong>Insurance Agent</strong> - EPLI coverage discussion</div>
-    <div class="share-item"><strong>Accountant/CPA</strong> - Classification & wage issues</div>
-    <div class="share-item"><strong>Office Manager</strong> - Day-to-day implementation</div>
-  </div>
-</div>
-
-<div class="consult-box">
-  <h3>Need Help Implementing These Recommendations?</h3>
-  <p>TechShield KC can assist with consultations and HR compliance support.</p>
-  <p><a href="https://www.techshieldkc.com">www.techshieldkc.com</a></p>
-  <p>info@techshieldkc.com | Kansas City, MO</p>
-</div>
-
-<div class="resources">
-  <h3>📚 Free Resources</h3>
-  <div class="res-grid">
-    <a href="https://dol.gov/agencies/whd">DOL Wage & Hour</a>
-    <a href="https://eeoc.gov/employers">EEOC Employers</a>
-    <a href="https://shrm.org">SHRM Resources</a>
-    <a href="https://uscis.gov/i-9">I-9 Central</a>
-  </div>
-</div>
-
-<div class="disclaimer">
-  <strong>Important:</strong> This HRShieldIQ™ assessment is educational guidance based on self-reported answers. It is not an HR audit, legal advice, or compliance certification.
-</div>
-
-<div class="footer">
-  <p><strong>TechShield KC LLC</strong></p>
-  <p>hrshieldiq.com | info@techshieldkc.com</p>
-  <p>© ${new Date().getFullYear()} HRShieldIQ™</p>
-</div>
-
-</body>
-</html>`;
+      const htmlContent = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HRShieldIQ Report - ' + safeBusinessName + '</title>' +
+        '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;max-width:850px;margin:0 auto;padding:40px;background:#fff;color:#333;line-height:1.6;font-size:11pt}' +
+        '.download-bar{background:#2563EB;color:white;padding:15px 20px;margin:-40px -40px 30px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}' +
+        '.download-bar button{background:white;color:#2563EB;border:none;padding:10px 25px;border-radius:6px;font-weight:600;cursor:pointer;font-size:14px}' +
+        '.header{text-align:center;margin-bottom:30px;padding-bottom:25px;border-bottom:3px solid #2563EB}' +
+        '.logo{font-size:32px;font-weight:bold;margin-bottom:5px}.logo span{color:#2563EB}' +
+        '.header p{color:#666;margin:5px 0}.header .meta{font-size:10pt;color:#888}' +
+        'h2{color:#333;font-size:16pt;margin:30px 0 15px;padding-bottom:8px;border-bottom:2px solid #2563EB}' +
+        '.score-box{background:#eff6ff;border:3px solid #2563EB;padding:30px;border-radius:12px;text-align:center;margin:25px 0}' +
+        '.score-number{font-size:48pt;font-weight:bold;color:#2563EB}.score-label{font-size:14pt;color:#666;margin-top:5px}' +
+        '.risk-level{display:inline-block;background:' + riskColor + ';color:white;padding:8px 20px;border-radius:20px;font-weight:600;margin-top:15px}' +
+        '.summary-table{display:flex;justify-content:center;gap:30px;margin:20px 0;flex-wrap:wrap}' +
+        '.summary-item{text-align:center;padding:15px 25px;border-radius:8px;min-width:120px}' +
+        '.summary-item.critical{background:#fee2e2}.summary-item.attention{background:#fef3c7}.summary-item.good{background:#d1fae5}' +
+        '.summary-item .num{font-size:28pt;font-weight:bold}' +
+        '.summary-item.critical .num{color:#dc2626}.summary-item.attention .num{color:#f59e0b}.summary-item.good .num{color:#10b981}' +
+        '.summary-item .label{font-size:10pt;color:#666}' +
+        '.priority-box{background:#eff6ff;border-left:4px solid #2563EB;padding:20px;margin:15px 0;border-radius:0 8px 8px 0}' +
+        '.priority-box h4{color:#2563EB;margin-bottom:8px}' +
+        '.issue-card{background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:20px;margin:15px 0}' +
+        '.issue-card.critical{border-left:4px solid #dc2626}.issue-card.attention{border-left:4px solid #f59e0b}' +
+        '.issue-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px}' +
+        '.issue-title{font-weight:600;color:#333}' +
+        '.badge{padding:4px 12px;border-radius:12px;font-size:9pt;font-weight:600}' +
+        '.badge.critical{background:#fee2e2;color:#dc2626}.badge.attention{background:#fef3c7;color:#b45309}' +
+        '.issue-answer{background:#f5f5f5;padding:10px 15px;border-radius:6px;font-style:italic;color:#666;margin:10px 0}' +
+        '.issue-content p{margin:8px 0}' +
+        '.good-section{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:2px solid #10b981;border-radius:12px;padding:20px 25px;margin:20px 0}' +
+        '.good-section h3{color:#10b981;margin-bottom:15px;font-size:14pt;text-align:center}' +
+        '.good-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px}' +
+        '.good-item{display:flex;align-items:center;gap:8px;background:white;border:1px solid #10b981;border-radius:8px;padding:10px 14px;font-size:11pt;color:#166534}' +
+        '.good-item .check{color:#10b981;font-weight:bold;font-size:14pt}' +
+        '.action-plan{background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);border:2px solid #2563EB;padding:25px;border-radius:12px;margin:25px 0}' +
+        '.action-plan h2{color:#2563EB;border:none;margin:0 0 15px;font-size:16pt;text-align:center}' +
+        '.action-week{background:white;border-radius:8px;padding:15px 20px;margin:12px 0}' +
+        '.action-week h3{color:#2563EB;font-size:13pt;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #bfdbfe}' +
+        '.action-week ul{margin:0;padding-left:20px}.action-week li{margin:8px 0;color:#333;font-size:11pt}' +
+        '.share-box{background:#f0f9ff;border:2px solid #0ea5e9;padding:20px 25px;border-radius:8px;margin:20px 0;text-align:center}' +
+        '.share-box h3{color:#0369a1;margin-bottom:15px;font-size:14pt}' +
+        '.share-list{display:grid;grid-template-columns:1fr 1fr;gap:12px 25px;text-align:left;max-width:650px;margin:0 auto}' +
+        '.share-item{font-size:11pt;color:#333}' +
+        '.consult-box{background:#eff6ff;border:2px solid #2563EB;padding:20px;border-radius:8px;margin:20px 0;text-align:center}' +
+        '.resources{background:#f0f9ff;border:2px solid #0ea5e9;padding:20px;border-radius:8px;margin:20px 0;text-align:center}' +
+        '.resources h3{color:#0369a1;margin-bottom:12px;font-size:14pt}' +
+        '.res-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}' +
+        '.res-grid a{display:block;background:white;padding:12px 10px;border-radius:6px;color:#2563EB;text-decoration:none;font-size:10pt;font-weight:500;text-align:center;border:1px solid #e0f2fe}' +
+        '.disclaimer{background:#f5f5f5;padding:12px 15px;border-radius:8px;font-size:9pt;color:#666;margin:20px 0;text-align:center}' +
+        '.footer{text-align:center;margin-top:25px;padding-top:15px;border-top:2px solid #2563EB;color:#888;font-size:9pt}' +
+        '.footer strong{color:#2563EB}' +
+        '@media print{.download-bar{display:none!important}}</style></head><body>' +
+        '<div class="download-bar"><span>📄 Your HRShieldIQ™ Report</span><button onclick="window.print()">🖨️ Save as PDF / Print</button></div>' +
+        '<div class="header"><div class="logo">HRShield<span>IQ</span>™</div><p>Employment Compliance Assessment</p><p class="meta">Prepared for: <strong>' + safeBusinessName + '</strong> | ' + safeIndustry + ' | ' + new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + '</p></div>' +
+        '<div class="score-box"><div class="score-number">' + (r.score || 0) + '</div><div class="score-label">out of 500 points</div><div class="risk-level">' + (r.riskLevel || 'ASSESSED') + '</div></div>' +
+        '<div class="summary-table"><div class="summary-item critical"><div class="num">' + (r.criticalCount || 0) + '</div><div class="label">Critical Issues</div></div><div class="summary-item attention"><div class="num">' + (r.attentionCount || 0) + '</div><div class="label">Needs Attention</div></div><div class="summary-item good"><div class="num">' + (r.goodCount || 0) + '</div><div class="label">Good Practices</div></div></div>' +
+        '<h2>Executive Summary</h2><p>' + escapeHtml(r.executiveSummary || 'Assessment completed. See details below.') + '</p>' +
+        '<h2>Top 3 Priorities</h2>' + prioritiesHtml +
+        criticalHtml + attentionHtml + goodHtml +
+        '<div class="action-plan"><h2>🎯 Your 30-Day Action Plan</h2><div class="action-week"><h3>⚡ Week 1: Quick Wins</h3><ul>' + week1 + '</ul></div><div class="action-week"><h3>🔧 Week 2-4: Core Improvements</h3><ul>' + week2 + '</ul></div><div class="action-week"><h3>🔄 Ongoing</h3><ul>' + ongoing + '</ul></div></div>' +
+        '<div class="share-box"><h3>📤 Who to Share This Report With</h3><div class="share-list"><div class="share-item"><strong>Employment Attorney</strong> for handbook & policy review</div><div class="share-item"><strong>Insurance Agent</strong> for EPLI coverage</div><div class="share-item"><strong>Accountant/CPA</strong> for classification & wage issues</div><div class="share-item"><strong>Office Manager</strong> for day-to-day implementation</div></div></div>' +
+        '<div class="consult-box"><h3 style="color:#2563EB;margin-bottom:8px;font-size:14pt;">Need Help Implementing These Recommendations?</h3><p style="margin:0 0 10px;color:#555;font-size:11pt;">TechShield KC can assist with consultations and HR compliance support.</p><p style="margin:0;"><a href="https://www.techshieldkc.com" style="color:#2563EB;text-decoration:none;font-size:14pt;font-weight:600;">www.techshieldkc.com</a></p><p style="margin:5px 0 0;color:#555;font-size:11pt;"><a href="mailto:info@techshieldkc.com" style="color:#2563EB;">info@techshieldkc.com</a> | Kansas City, MO</p></div>' +
+        '<div class="resources"><h3>📚 Free Resources</h3><div class="res-grid"><a href="https://dol.gov/agencies/whd">DOL Wage & Hour</a><a href="https://eeoc.gov/employers">EEOC Employers</a><a href="https://shrm.org">SHRM Resources</a><a href="https://uscis.gov/i-9">I-9 Central</a></div></div>' +
+        '<div class="disclaimer"><strong>Important:</strong> This HRShieldIQ™ assessment is educational guidance based on self-reported answers. It is not an HR audit, compliance certification, or legal advice.</div>' +
+        '<div class="footer"><p><strong>TechShield KC LLC</strong></p><p>hrshieldiq.com | <a href="mailto:info@techshieldkc.com" style="color:#888;">info@techshieldkc.com</a></p><p style="margin-top:8px;">© ' + new Date().getFullYear() + ' HRShieldIQ™</p></div>' +
+        '</body></html>';
 
       reportWindow.document.write(htmlContent);
       reportWindow.document.close();
     };
-    
+
     return (
       <div style={baseStyles}>
         <style>{globalStyles}</style>
-        
         <div style={{ maxWidth: '500px', margin: '0 auto', textAlign: 'center', paddingTop: '3rem' }}>
-          {/* Success Icon */}
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            background: '#22c55e',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 1.5rem',
-            fontSize: '2.5rem',
-            color: 'white'
-          }}>✓</div>
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2.5rem', color: 'white' }}>✓</div>
           
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.5rem', color: colors.white }}>
-            Your Report is Ready!
-          </h1>
-          
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.5rem', color: colors.white }}>Your Report is Ready!</h1>
           <p style={{ color: colors.grayLight, fontSize: '1rem', marginBottom: '0.5rem' }}>{businessInfo.name}</p>
 
-          {/* Score Preview */}
           {report && report.score && (
             <div style={{ background: colors.darkCard, borderRadius: '12px', padding: '1.5rem', margin: '1.5rem 0' }}>
               <div style={{ fontSize: '3rem', fontWeight: 700, color: colors.primary }}>{report.score}</div>
               <div style={{ color: colors.gray, fontSize: '0.9rem' }}>out of 500</div>
-              <div style={{
-                display: 'inline-block',
-                background: report.riskLevel === 'HIGH RISK' ? '#dc2626' :
-                           report.riskLevel === 'ELEVATED RISK' ? '#f59e0b' :
-                           report.riskLevel === 'MODERATE' ? '#3b82f6' : '#10b981',
-                color: 'white',
-                padding: '0.4rem 1rem',
-                borderRadius: '20px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                marginTop: '0.75rem'
-              }}>{report.riskLevel}</div>
+              <div style={{ display: 'inline-block', background: report.riskLevel === 'HIGH RISK' ? '#dc2626' : report.riskLevel === 'ELEVATED RISK' ? '#f59e0b' : report.riskLevel === 'MODERATE' ? '#3b82f6' : '#10b981', color: 'white', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, marginTop: '0.75rem' }}>{report.riskLevel}</div>
+              <div style={{ color: colors.gray, fontSize: '0.75rem', marginTop: '1rem', paddingTop: '0.75rem', borderTop: `1px solid ${colors.grayDark}33` }}>25 questions × 20 points = 500 max. Higher is better.</div>
             </div>
           )}
           
-          {/* Download Button */}
-          <button
-            onClick={downloadPdf}
-            style={{
-              background: colors.primary,
-              border: 'none',
-              borderRadius: '10px',
-              padding: '1rem 2.5rem',
-              color: colors.white,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              fontSize: '1.1rem',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              boxShadow: `0 4px 20px ${colors.primary}40`,
-              marginBottom: '2rem'
-            }}
-          >📄 Download PDF Report</button>
+          <button data-download-pdf="true" onClick={downloadPdf} style={{ background: colors.primary, border: 'none', borderRadius: '10px', padding: '1rem 2.5rem', color: colors.white, cursor: 'pointer', fontFamily: 'inherit', fontSize: '1.1rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.75rem', boxShadow: `0 4px 20px ${colors.primary}40`, marginBottom: '2rem' }}>
+            📄 Download PDF Report
+          </button>
           
-          {/* Help Banner */}
-          <div style={{
-            background: colors.primaryLight,
-            border: `1px solid ${colors.primaryBorder}`,
-            borderRadius: '10px',
-            padding: '1.25rem',
-            marginBottom: '1.5rem'
-          }}>
-            <p style={{ fontWeight: 600, color: colors.white, marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-              Need help implementing recommendations?
-            </p>
-            <p style={{ color: colors.grayLight, fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-              TechShield KC offers hands-on HR compliance support for small businesses.
-            </p>
-            <p style={{ color: colors.primary, fontSize: '0.85rem', fontWeight: 500 }}>
-              info@techshieldkc.com
-            </p>
+          <div style={{ background: colors.primaryLight, border: `1px solid ${colors.primaryBorder}`, borderRadius: '10px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+            <p style={{ fontWeight: 600, color: colors.white, marginBottom: '0.5rem', fontSize: '0.9rem' }}>Need help implementing recommendations?</p>
+            <p style={{ color: colors.grayLight, fontSize: '0.8rem', marginBottom: '0.75rem' }}>TechShield KC offers hands-on HR compliance support for small businesses.</p>
+            <a href="mailto:info@techshieldkc.com?subject=HRShieldIQ%20Follow-up" style={{ color: colors.primary, fontSize: '0.85rem', textDecoration: 'none', fontWeight: 500 }}>Contact us →</a>
           </div>
           
-          {/* New Assessment */}
-          <button
-            onClick={() => {
-              setCurrentStep('intro');
-              setCurrentCategory(0);
-              setAnswers({});
-              setReport(null);
-              setShowPaywall(false);
-              setPaymentComplete(false);
-            }}
-            style={{
-              background: 'transparent',
-              border: `1px solid ${colors.grayDark}`,
-              borderRadius: '8px',
-              padding: '0.75rem 1.25rem',
-              color: colors.grayLight,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              fontSize: '0.85rem'
-            }}
-          >Start New Assessment</button>
+          <button onClick={() => { setCurrentStep('intro'); setCurrentCategory(0); setAnswers({}); setReport(null); setShowPaywall(false); setPaymentComplete(false); }} style={{ background: 'transparent', border: `1px solid ${colors.grayDark}`, borderRadius: '8px', padding: '0.75rem 1.25rem', color: colors.grayLight, cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.85rem' }}>
+            Start New Assessment
+          </button>
           
-          {/* Footer */}
           <div style={{ borderTop: `1px solid ${colors.grayDark}33`, paddingTop: '1.5rem', marginTop: '2rem' }}>
-            <p style={{ fontSize: '0.7rem', color: colors.grayDark, lineHeight: 1.6 }}>
-              This is an educational assessment, not an HR audit or legal advice.
-            </p>
-            <p style={{ fontSize: '0.75rem', color: colors.gray, marginTop: '0.75rem' }}>
-              © {new Date().getFullYear()} HRShieldIQ™ by TechShield KC LLC
-            </p>
+            <p style={{ fontSize: '0.7rem', color: colors.grayDark, lineHeight: 1.6 }}>This is an educational assessment, not an HR audit or compliance certification.</p>
+            <p style={{ fontSize: '0.75rem', color: colors.gray, marginTop: '0.75rem' }}>© {new Date().getFullYear()} HRShieldIQ™ by TechShield KC LLC</p>
             <p style={{ fontSize: '0.7rem', marginTop: '0.5rem' }}>
               <a href="/privacy.html" style={{ color: colors.grayDark, textDecoration: 'none', marginRight: '1rem' }}>Privacy Policy</a>
               <a href="/terms.html" style={{ color: colors.grayDark, textDecoration: 'none' }}>Terms of Service</a>
