@@ -859,11 +859,11 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
               Before you spend $10,000 on an HR audit,
             </p>
             <p style={{ fontSize: '1.25rem', color: '#fff', marginBottom: '28px' }}>
-              spend <span style={{ color: colors.primary, fontWeight: 600 }}>7 minutes</span> finding out what you actually need.
+              spend <span style={{ color: colors.primary, fontWeight: 600 }}>under 10 minutes</span> finding out what you actually need.
             </p>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', marginBottom: '8px', fontSize: '1.05rem', color: '#666' }}>
-              <span>✓ 7 min</span>
+              <span>✓ ~10 min</span>
               <span>✓ 25 questions</span>
               <span>✓ DOL & EEOC</span>
             </div>
@@ -892,7 +892,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
               Start Free Assessment →
             </button>
             <p style={{ fontSize: '1rem', color: '#555', marginTop: '16px' }}>
-              Free preview • Full report: <span style={{ color: colors.primary, fontWeight: 600 }}>$29.99</span> • 7 min
+              Free preview • Full report: <span style={{ color: colors.primary, fontWeight: 600 }}>$29.99</span> • ~10 min
             </p>
           </section>
 
@@ -997,7 +997,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
                   <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', backgroundColor: colors.primary, color: '#fff', padding: '3px 10px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>SMART</div>
                   <p style={{ color: colors.primary, fontSize: '0.9rem', margin: '0 0 8px' }}>HRShieldIQ</p>
                   <p style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 700, margin: '0 0 8px' }}>$29.99</p>
-                  <p style={{ color: '#888', fontSize: '0.85rem', margin: 0 }}>7 minutes</p>
+                  <p style={{ color: '#888', fontSize: '0.85rem', margin: 0 }}>under 10 minutes</p>
                 </div>
               </div>
             </div>
@@ -1029,9 +1029,9 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
               {[
                 { q: "I'm not an HR expert. Will I understand this?", a: "If you can answer yes, no, or not sure, you can do this. Plain English questions, clear next steps in the report." },
                 { q: "Isn't this just a free checklist?", a: "Free checklists tell you WHAT to check. Our AI report tells you WHERE you're vulnerable and HOW to prioritize based on YOUR answers. That's a consultant's job." },
-                { q: "What if I don't have time right now?", a: "7 minutes. Start today, finish tomorrow. Your access never expires. Report generates instantly when done." },
+                { q: "What if I don't have time right now?", a: "under 10 minutes. Start today, finish tomorrow. Your access never expires. Report generates instantly when done." },
                 { q: "Is my business too small for this?", a: "If you have employees, you have risk. Small businesses are the #1 target precisely BECAUSE they think they're too small to matter." },
-                { q: "How is this different from hiring a consultant?", a: "Consultants charge $5,000+ and take weeks. This gives you 80% of that value in 7 minutes for $29.99. For most small businesses, that's enough to find and prioritize your biggest gaps." }
+                { q: "How is this different from hiring a consultant?", a: "Consultants charge $5,000+ and take weeks. This gives you 80% of that value in under 10 minutes for $29.99. For most small businesses, that's enough to find and prioritize your biggest gaps." }
               ].map((faq, i) => (
                 <div key={i} style={{ borderBottom: '1px solid #252525', padding: '20px 0', textAlign: 'center' }}>
                   <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600, marginBottom: '8px' }}>{faq.q}</h3>
@@ -1047,7 +1047,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
             <button onClick={() => setCurrentStep('business')} style={{ display: 'inline-block', backgroundColor: colors.primary, color: '#fff', padding: '18px 40px', fontSize: '1.15rem', fontWeight: 600, borderRadius: '8px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 24px rgba(37,99,235,0.35)', fontFamily: 'inherit' }}>
               Start Free Assessment →
             </button>
-            <p style={{ fontSize: '1rem', color: '#555', marginTop: '16px' }}>Free preview • Full report: <span style={{ color: colors.primary, fontWeight: 600 }}>$29.99</span> • 7 min</p>
+            <p style={{ fontSize: '1rem', color: '#555', marginTop: '16px' }}>Free preview • Full report: <span style={{ color: colors.primary, fontWeight: 600 }}>$29.99</span> • ~10 min</p>
           </section>
 
           {/* Disclaimer */}
@@ -1080,7 +1080,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
         <div style={{ maxWidth: '500px', margin: '0 auto', padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
             <button onClick={() => setCurrentStep('intro')} style={{ background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '1rem', fontFamily: 'inherit', padding: 0 }}>← Back</button>
-            <span style={{ color: '#555', fontSize: '0.9rem' }}>⏱️ About 7 minutes</span>
+            <span style={{ color: '#555', fontSize: '0.9rem' }}>⏱️ Under 10 minutes</span>
           </div>
 
           <h1 style={{ fontSize: '1.75rem', fontWeight: 600, color: '#fff', marginBottom: '12px' }}>Personalize your report</h1>
