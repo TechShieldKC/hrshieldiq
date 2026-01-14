@@ -258,7 +258,7 @@ const HRShieldIQ = () => {
         { 
           id: 'i9_completion', 
           text: "Do you complete Form I-9 within 3 business days of each new hire's start date?", 
-          helper: 'Federal law requires I-9 completion within 3 days. ICE fines range from $252 to $2,507 per form for first offenses.',
+          helper: 'Form I-9 verifies an employee\'s identity and work eligibility. Federal law requires completion within 3 days. ICE (Immigration and Customs Enforcement) fines range from $252 to $2,507 per form for first offenses.',
           options: ['Yes, always within 3 days', 'Usually, but sometimes delayed', 'Often completed late', 'Not sure what I-9 is'] 
         },
         { 
@@ -270,7 +270,7 @@ const HRShieldIQ = () => {
         { 
           id: 'background_checks', 
           text: 'If you run background checks, do applicants sign a separate disclosure and authorization form?', 
-          helper: 'FCRA requires standalone disclosure (not buried in the application) and written consent before running any background check.',
+          helper: 'The FCRA (Fair Credit Reporting Act) requires standalone disclosure—not buried in the application—and written consent before running any background check.',
           options: ['Yes, separate FCRA-compliant form', "It's included in our application", "We don't run background checks", 'Not sure'] 
         },
         { 
@@ -326,7 +326,7 @@ const HRShieldIQ = () => {
         { 
           id: 'classification', 
           text: 'How do you determine if employees are exempt (salaried, no overtime) or non-exempt (hourly, overtime eligible)?', 
-          helper: 'Misclassification is the #1 wage & hour violation. Job duties—not title or salary alone—determine exempt status under FLSA.',
+          helper: 'Misclassification is the #1 wage & hour violation. Job duties—not title or salary alone—determine exempt status under the FLSA (Fair Labor Standards Act).',
           options: ['Formal review of duties against FLSA tests', 'Based on job title and salary level', 'Everyone is hourly/non-exempt', 'Not sure of the difference'] 
         },
         { 
@@ -381,13 +381,13 @@ const HRShieldIQ = () => {
         { 
           id: 'poster_compliance', 
           text: 'Are required federal and state employment posters displayed in your workplace?', 
-          helper: 'Employers must display posters about minimum wage, FMLA, OSHA, EEO, and state-specific requirements. Fines range from $100-$35,000.',
+          helper: 'Required posters cover minimum wage, FMLA (Family Medical Leave Act), OSHA (workplace safety), EEO (Equal Employment Opportunity), and state-specific rules. Fines range from $100-$35,000.',
           options: ['Yes, current year posters displayed', 'Yes, but may be outdated', 'Some posters, not all', 'No posters / Not sure'] 
         },
         { 
           id: 'eeoc_records', 
           text: 'Do you retain employment records (applications, personnel files) for required periods?', 
-          helper: 'EEOC requires 1 year for applications, 1 year after termination for personnel records. FLSA requires 3 years for payroll. Longer is safer.',
+          helper: 'The EEOC (Equal Employment Opportunity Commission) requires 1 year for applications, 1 year after termination for personnel records. The FLSA requires 3 years for payroll. Longer is safer.',
           options: ['Yes, we follow retention schedules', 'We keep everything indefinitely', 'Varies, no formal policy', 'Not sure of requirements'] 
         }
       ]
@@ -412,7 +412,7 @@ const HRShieldIQ = () => {
         { 
           id: 'cobra_notice', 
           text: 'When employees leave, do you provide required COBRA or state continuation notices?', 
-          helper: 'Employers with 20+ employees must offer COBRA within 14 days of termination. Many states have mini-COBRA for smaller employers.',
+          helper: 'COBRA (health insurance continuation) lets departing employees keep their coverage temporarily. Employers with 20+ employees must offer it within 14 days of termination. Many states have mini-COBRA for smaller employers.',
           options: ['Yes, timely notices sent', 'Our insurance carrier handles it', 'We have fewer than 20 employees', 'Not sure if we comply'] 
         },
         { 
@@ -424,7 +424,7 @@ const HRShieldIQ = () => {
         { 
           id: 'retaliation_awareness', 
           text: 'Do managers understand what constitutes illegal retaliation against employees?', 
-          helper: 'Retaliation claims are the #1 EEOC charge. Adverse actions after complaints—even legitimate discipline—can appear retaliatory.',
+          helper: 'Retaliation claims are the #1 charge filed with the EEOC (Equal Employment Opportunity Commission). Adverse actions after complaints—even legitimate discipline—can appear retaliatory.',
           options: ['Yes, managers are trained', 'Generally understood', 'Not specifically addressed', 'Not sure'] 
         }
       ]
@@ -913,7 +913,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
               <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>Built on real standards</h2>
               <div style={{ backgroundColor: '#141414', borderRadius: '12px', padding: '24px', border: '1px solid #252525', marginBottom: '16px' }}>
                 <p style={{ fontSize: '1.05rem', color: '#ccc', lineHeight: 1.7, margin: 0 }}>
-                  Built on <span style={{ color: colors.primary, fontWeight: 600 }}>DOL guidelines</span>, <span style={{ color: colors.primary, fontWeight: 600 }}>EEOC requirements</span>, and <span style={{ color: colors.primary, fontWeight: 600 }}>SHRM best practices</span>—the same standards employment attorneys and HR professionals use.
+                  Built on <span style={{ color: colors.primary, fontWeight: 600 }}>DOL</span> (Dept. of Labor) guidelines, <span style={{ color: colors.primary, fontWeight: 600 }}>EEOC</span> (Equal Employment Opportunity) requirements, and <span style={{ color: colors.primary, fontWeight: 600 }}>SHRM</span> (Society for Human Resource Management) best practices.
                 </p>
               </div>
               <div style={{ backgroundColor: '#141414', borderRadius: '12px', padding: '24px', border: '1px solid #252525' }}>
@@ -1126,8 +1126,8 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
                 <option value="">Select size...</option>
                 <option value="1-4 employees">1-4 employees</option>
                 <option value="5-14 employees">5-14 employees</option>
-                <option value="15-49 employees">15-49 employees (ADA/Title VII threshold)</option>
-                <option value="50-99 employees">50-99 employees (FMLA/ACA threshold)</option>
+                <option value="15-49 employees">15-49 employees (federal discrimination laws apply)</option>
+                <option value="50-99 employees">50-99 employees (FMLA & healthcare law apply)</option>
                 <option value="100+ employees">100+ employees</option>
               </select>
             </div>
