@@ -1043,8 +1043,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
 
           {/* Final CTA */}
           <section style={{ padding: '60px 24px', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 600, color: '#fff', marginBottom: '16px', lineHeight: 1.4 }}>You'll find out where you stand eventually.</h2>
-            <p style={{ fontSize: '1.1rem', color: '#888', marginBottom: '32px', lineHeight: 1.6 }}>On <strong style={{ color: '#fff' }}>your terms</strong>, or when the DOL comes knocking.</p>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 600, color: '#fff', marginBottom: '32px', lineHeight: 1.4 }}>Know where you stand, on your schedule, at your pace.</h2>
             <button onClick={() => setCurrentStep('business')} style={{ display: 'inline-block', backgroundColor: colors.primary, color: '#fff', padding: '18px 40px', fontSize: '1.15rem', fontWeight: 600, borderRadius: '8px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 24px rgba(37,99,235,0.35)', fontFamily: 'inherit' }}>
               Start Free Assessment →
             </button>
