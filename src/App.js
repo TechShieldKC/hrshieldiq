@@ -1109,6 +1109,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
                 <option value="Daycare / Childcare">Daycare / Childcare</option>
                 <option value="Education / School">Education / School</option>
                 <option value="Financial Services">Financial Services</option>
+                <option value="Funeral Home / Mortuary">Funeral Home / Mortuary</option>
                 <option value="Healthcare / Medical">Healthcare / Medical</option>
                 <option value="Hospitality / Restaurant">Hospitality / Restaurant</option>
                 <option value="Manufacturing">Manufacturing</option>
@@ -1500,18 +1501,25 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
       const riskColor = r.riskLevel === 'HIGH RISK' ? '#dc2626' : r.riskLevel === 'ELEVATED RISK' ? '#f59e0b' : r.riskLevel === 'MODERATE' ? '#3b82f6' : '#10b981';
       const score = r.score || 0;
       
-      // Industry averages and stats
+      // Industry averages and stats with sources
       const industryData = {
-        'Healthcare / Medical': { avg: 285, stat: 'Healthcare employers face 30% more wage & hour lawsuits than other industries.', source: 'DOL Enforcement Data', exposure: '$50,000+' },
-        'Religious Organization': { avg: 275, stat: 'Religious organizations face unique compliance challenges with ministerial exceptions and volunteer classification.', source: 'EEOC Guidance', exposure: '$35,000+' },
-        'Daycare / Childcare': { avg: 280, stat: 'Childcare facilities face strict background check and ratio requirements with penalties up to $10,000 per violation.', source: 'State Licensing Boards', exposure: '$40,000+' },
-        'Retail / Restaurant': { avg: 265, stat: 'Restaurants pay $1.9 billion annually in wage & hour settlements—tip credit and overtime are top violations.', source: 'DOL Wage & Hour Division', exposure: '$45,000+' },
+        'Healthcare / Medical': { avg: 285, stat: 'Healthcare employers face 30% more wage & hour lawsuits than other industries.', source: 'DOL Wage & Hour Division Enforcement Data', exposure: '$50,000+' },
+        'Religious Organization': { avg: 275, stat: 'Religious organizations face unique compliance challenges with ministerial exceptions and volunteer classification.', source: 'EEOC Religious Discrimination Guidance', exposure: '$35,000+' },
+        'Daycare / Childcare': { avg: 280, stat: 'Childcare facilities face strict background check and ratio requirements with penalties up to $10,000 per violation.', source: 'State Childcare Licensing Boards', exposure: '$40,000+' },
+        'Hospitality / Restaurant': { avg: 265, stat: 'Restaurants pay $1.9 billion annually in wage & hour settlements—tip credit and overtime are top violations.', source: 'DOL Wage & Hour Division', exposure: '$45,000+' },
+        'Retail / E-commerce': { avg: 270, stat: 'Retail faces high turnover and scheduling compliance issues with predictive scheduling laws in many states.', source: 'National Retail Federation', exposure: '$35,000+' },
         'Construction / Trades': { avg: 270, stat: 'Construction employers face 40% higher OSHA inspection rates and Davis-Bacon Act scrutiny on federal projects.', source: 'OSHA Enforcement Data', exposure: '$55,000+' },
         'Professional Services': { avg: 305, stat: 'Professional services firms face increased DOL audits for exempt employee misclassification.', source: 'DOL Wage & Hour Division', exposure: '$40,000+' },
         'Manufacturing': { avg: 290, stat: 'Manufacturing sees 25% of all OSHA violations with average penalties of $15,000 per serious violation.', source: 'OSHA Statistics', exposure: '$60,000+' },
-        'Nonprofit': { avg: 295, stat: 'Nonprofits face unique risks with volunteer vs. employee classification—misclassification penalties start at $50 per worker.', source: 'IRS & DOL Guidelines', exposure: '$30,000+' }
+        'Nonprofit / Association': { avg: 295, stat: 'Nonprofits face unique risks with volunteer vs. employee classification—misclassification penalties start at $50 per worker.', source: 'Internal Revenue Service (IRS) & DOL Guidelines', exposure: '$30,000+' },
+        'Education / School': { avg: 280, stat: '58.3% of K-12 DOL investigations find FLSA violations—one district faced $1.5M+ in back wages from a single audit.', source: 'DOL Wage & Hour Division', exposure: '$45,000+' },
+        'Funeral Home / Mortuary': { avg: 285, stat: 'Funeral home OSHA fines can reach $161,323 for serious violations—bloodborne pathogen and formaldehyde exposure are common citations.', source: 'OSHA / National Funeral Directors Association (NFDA)', exposure: '$50,000+' },
+        'Financial Services': { avg: 300, stat: 'Financial services face heightened scrutiny for overtime exemption misclassification of analysts and advisors.', source: 'DOL Wage & Hour Division', exposure: '$45,000+' },
+        'Real Estate': { avg: 290, stat: 'Real estate faces significant misclassification risk—agent/employee status lawsuits have increased dramatically in recent years.', source: 'DOL & State Real Estate Commissions', exposure: '$40,000+' },
+        'Technology / IT': { avg: 295, stat: 'Up to 30% of tech employers misclassify workers as contractors—startups face high exposure for back wages and benefits.', source: 'DOL Misclassification Initiative', exposure: '$50,000+' },
+        'Other': { avg: 285, stat: 'Small businesses face an average of $125,000 in legal costs per employment lawsuit.', source: 'Hiscox Employment Practices Liability Report', exposure: '$45,000+' }
       };
-      const indData = industryData[businessInfo.industry] || { avg: 285, stat: 'Small businesses face an average of $125,000 in legal costs per employment lawsuit.', source: 'Hiscox Employment Practices Liability Report', exposure: '$45,000+' };
+      const indData = industryData[businessInfo.industry] || industryData['Other'];
       const allAvg = 310;
       const compareMsg = score > indData.avg ? "✓ You're above average for your industry!" : score > indData.avg - 30 ? "You're close to industry average" : "⚠️ Below industry average - prioritize improvements";
       
@@ -1848,7 +1856,7 @@ ${goodHtml}
   <h3>📋 Common Compliance Timeframes</h3>
   <div class="quick-ref-grid">
     <div class="quick-ref-item">
-      <div class="quick-ref-label">I-9 Completion</div>
+      <div class="quick-ref-label">Form I-9 (Work Eligibility)</div>
       <div class="quick-ref-value">3 Days</div>
       <div class="quick-ref-note">From hire start date</div>
     </div>
@@ -1860,7 +1868,7 @@ ${goodHtml}
     <div class="quick-ref-item">
       <div class="quick-ref-label">Payroll Records</div>
       <div class="quick-ref-value">3+ Years</div>
-      <div class="quick-ref-note">FLSA requirement</div>
+      <div class="quick-ref-note">Fair Labor Standards Act (FLSA)</div>
     </div>
   </div>
 </div>
@@ -1870,8 +1878,8 @@ ${goodHtml}
   <h3>📤 Consider Sharing This Report With</h3>
   <div class="share-grid">
     <div class="share-item"><div class="share-role">Employment Attorney</div><div class="share-why">Policy review</div></div>
-    <div class="share-item"><div class="share-role">Insurance Agent</div><div class="share-why">EPLI coverage</div></div>
-    <div class="share-item"><div class="share-role">Accountant/CPA</div><div class="share-why">Classification</div></div>
+    <div class="share-item"><div class="share-role">Insurance Agent</div><div class="share-why">EPLI (Employment Practices Liability Insurance)</div></div>
+    <div class="share-item"><div class="share-role">Accountant/CPA</div><div class="share-why">Worker Classification</div></div>
     <div class="share-item"><div class="share-role">HR Consultant</div><div class="share-why">Implementation</div></div>
   </div>
 </div>
@@ -1888,11 +1896,28 @@ ${goodHtml}
 <div class="resources">
   <h3>📚 Helpful Resources</h3>
   <div class="res-grid">
-    <a href="https://dol.gov/agencies/whd">DOL Wage & Hour</a>
+    <a href="https://dol.gov/agencies/whd">Dept. of Labor (DOL)</a>
     <a href="https://eeoc.gov/employers">EEOC Employers</a>
-    <a href="https://shrm.org">SHRM Resources</a>
-    <a href="https://uscis.gov/i-9">I-9 Central</a>
+    <a href="https://shrm.org">SHRM (HR Professionals)</a>
+    <a href="https://uscis.gov/i-9">Form I-9 Central</a>
   </div>
+</div>
+
+<!-- Sources -->
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;margin:20px 0;">
+  <h4 style="font-family:Inter,sans-serif;font-size:10pt;color:#475569;margin:0 0 10px;text-align:center;">📖 Data Sources & References</h4>
+  <p style="font-size:8pt;color:#64748b;margin:0;line-height:1.8;text-align:center;">
+    Industry statistics referenced in this report are compiled from publicly available sources including:
+    U.S. Department of Labor (DOL) Wage & Hour Division enforcement data •
+    Occupational Safety and Health Administration (OSHA) inspection statistics •
+    Equal Employment Opportunity Commission (EEOC) guidance documents •
+    Society for Human Resource Management (SHRM) best practices •
+    Hiscox Employment Practices Liability Report •
+    National Federation of Independent Business (NFIB) surveys •
+    State licensing board compliance data.
+    <br/><br/>
+    <strong>Industry-Specific Source:</strong> ${indData.source}
+  </p>
 </div>
 
 <div class="disclaimer">
