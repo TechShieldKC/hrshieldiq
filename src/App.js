@@ -1526,7 +1526,6 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
       
       // Cost analysis
       const fixCost = r.criticalCount * 500 + r.attentionCount * 200;
-      const exposureMult = Math.max(10, Math.round((indData.exposure.replace(/[^0-9]/g, '') / fixCost) || 15));
       
       // Generate priorities HTML
       const prioritiesHtml = (r.priorities || []).map((p, i) => 
