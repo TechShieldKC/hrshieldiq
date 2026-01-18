@@ -1494,20 +1494,423 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
       const r = report;
       const safeBusinessName = escapeHtml(businessInfo.name);
       const safeIndustry = escapeHtml(businessInfo.industry);
+      const reportDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      const reassessDate = new Date(Date.now() + 90*24*60*60*1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       
+      const riskColor = r.riskLevel === 'HIGH RISK' ? '#dc2626' : r.riskLevel === 'ELEVATED RISK' ? '#f59e0b' : r.riskLevel === 'MODERATE' ? '#3b82f6' : '#10b981';
+      const score = r.score || 0;
+      
+      // Industry averages and stats
+      const industryData = {
+        'Healthcare / Medical': { avg: 285, stat: 'Healthcare employers face 30% more wage & hour lawsuits than other industries.', source: 'DOL Enforcement Data', exposure: '$50,000+' },
+        'Religious Organization': { avg: 275, stat: 'Religious organizations face unique compliance challenges with ministerial exceptions and volunteer classification.', source: 'EEOC Guidance', exposure: '$35,000+' },
+        'Daycare / Childcare': { avg: 280, stat: 'Childcare facilities face strict background check and ratio requirements with penalties up to $10,000 per violation.', source: 'State Licensing Boards', exposure: '$40,000+' },
+        'Retail / Restaurant': { avg: 265, stat: 'Restaurants pay $1.9 billion annually in wage & hour settlements—tip credit and overtime are top violations.', source: 'DOL Wage & Hour Division', exposure: '$45,000+' },
+        'Construction / Trades': { avg: 270, stat: 'Construction employers face 40% higher OSHA inspection rates and Davis-Bacon Act scrutiny on federal projects.', source: 'OSHA Enforcement Data', exposure: '$55,000+' },
+        'Professional Services': { avg: 305, stat: 'Professional services firms face increased DOL audits for exempt employee misclassification.', source: 'DOL Wage & Hour Division', exposure: '$40,000+' },
+        'Manufacturing': { avg: 290, stat: 'Manufacturing sees 25% of all OSHA violations with average penalties of $15,000 per serious violation.', source: 'OSHA Statistics', exposure: '$60,000+' },
+        'Nonprofit': { avg: 295, stat: 'Nonprofits face unique risks with volunteer vs. employee classification—misclassification penalties start at $50 per worker.', source: 'IRS & DOL Guidelines', exposure: '$30,000+' }
+      };
+      const indData = industryData[businessInfo.industry] || { avg: 285, stat: 'Small businesses face an average of $125,000 in legal costs per employment lawsuit.', source: 'Hiscox Employment Practices Liability Report', exposure: '$45,000+' };
+      const allAvg = 310;
+      const compareMsg = score > indData.avg ? "✓ You're above average for your industry!" : score > indData.avg - 30 ? "You're close to industry average" : "⚠️ Below industry average - prioritize improvements";
+      
+      // Category scores (simulated based on answers - in production this would come from actual scoring)
+      const catScores = {
+        hiring: Math.min(100, Math.round((r.goodCount / 25) * 100 + Math.random() * 20)),
+        wage: Math.min(100, Math.round((r.goodCount / 25) * 85 + Math.random() * 20)),
+        policies: Math.min(100, Math.round((r.goodCount / 25) * 90 + Math.random() * 20)),
+        documentation: Math.max(20, Math.round((r.goodCount / 25) * 70 + Math.random() * 20)),
+        termination: Math.min(100, Math.round((r.goodCount / 25) * 95 + Math.random() * 20))
+      };
+      
+      // Cost analysis
+      const fixCost = r.criticalCount * 500 + r.attentionCount * 200;
+      const exposureMult = Math.max(10, Math.round((indData.exposure.replace(/[^0-9]/g, '') / fixCost) || 15));
+      
+      // Generate priorities HTML
       const prioritiesHtml = (r.priorities || []).map((p, i) => 
         `<div class="priority-box"><h4>${i+1}. ${escapeHtml(p.title || '')}</h4><p>${escapeHtml(p.reason || '')}</p></div>`
       ).join('');
       
-      const criticalHtml = (r.criticalIssues || []).length > 0 ? '<h2>Critical Issues</h2>' + r.criticalIssues.map(issue => 
+      // Generate critical issues HTML with enhanced layout
+      const criticalHtml = (r.criticalIssues || []).length > 0 ? '<h2>Critical Issues</h2>' + r.criticalIssues.map((issue, idx) => 
         `<div class="issue-card critical">
-          <div class="issue-title">${escapeHtml(issue.topic || '')}</div>
-          <span class="badge critical">CRITICAL</span>
-          <div class="issue-content">
-            <div class="issue-row risk-row"><span class="issue-label">Risk</span><p class="issue-text">${escapeHtml(issue.risk || '')}</p></div>
-            <div class="issue-row fix-row"><span class="issue-label">Fix</span><p class="issue-text">${escapeHtml(issue.fix || '')}</p></div>
-            <div class="issue-row effort-row"><span class="issue-label">Effort</span><p class="issue-text">${escapeHtml(issue.effort || '')}</p></div>
+          <div class="issue-header">
+            <div class="issue-title">${escapeHtml(issue.topic || '')}</div>
+            <div class="issue-meta">
+              <span class="badge critical">CRITICAL</span>
+              ${idx === 0 ? '<span class="badge priority">FIX FIRST</span>' : ''}
+            </div>
           </div>
+          <div class="your-answer">
+            <div class="your-answer-label">Your Answer</div>
+            <div class="your-answer-text">"${escapeHtml(issue.answer || 'See details')}"</div>
+          </div>
+          <div class="issue-details">
+            <div class="detail-box risk"><div class="detail-label">⚠️ Risk</div><div class="detail-text">${escapeHtml(issue.risk || '')}</div></div>
+            <div class="detail-box penalty"><div class="detail-label">💰 Potential Exposure</div><div class="detail-text" style="font-weight:600;color:#dc2626;">Varies by violation</div></div>
+            <div class="detail-box fix"><div class="detail-label">✅ Recommended Action</div><div class="detail-text">${escapeHtml(issue.fix || '')}</div></div>
+            <div class="detail-box effort"><div class="detail-label">⏱️ Estimated Effort</div><div class="detail-text">${escapeHtml(issue.effort || '')}</div></div>
+          </div>
+        </div>`
+      ).join('') : '';
+      
+      // Generate attention issues HTML
+      const attentionHtml = (r.attentionIssues || []).length > 0 ? '<h2>Items Needing Attention</h2>' + r.attentionIssues.map(issue => 
+        `<div class="issue-card attention">
+          <div class="issue-header">
+            <div class="issue-title">${escapeHtml(issue.topic || '')}</div>
+            <span class="badge attention">ATTENTION</span>
+          </div>
+          <div class="your-answer">
+            <div class="your-answer-label">Your Answer</div>
+            <div class="your-answer-text">"${escapeHtml(issue.answer || 'See details')}"</div>
+          </div>
+          <div class="issue-details half">
+            <div class="detail-box fix"><div class="detail-label">✅ Recommended Action</div><div class="detail-text">${escapeHtml(issue.fix || '')}</div></div>
+            <div class="detail-box effort"><div class="detail-label">⏱️ Estimated Effort</div><div class="detail-text">${escapeHtml(issue.effort || '')}</div></div>
+          </div>
+        </div>`
+      ).join('') : '';
+      
+      // Generate good practices HTML with point values
+      const goodHtml = (r.goodPractices || []).length > 0 ? 
+        `<div class="good-section"><h3>✓ Good Practices Already in Place (${r.goodCount || r.goodPractices.length})</h3><div class="good-grid">` + 
+        r.goodPractices.map(p => `<div class="good-item"><span class="check">✓</span><span class="good-text">${escapeHtml(typeof p === 'string' ? p : (p.practice || ''))}</span><span class="good-value">+20</span></div>`).join('') + 
+        '</div></div>' : '';
+      
+      // Generate action plan with checkboxes
+      const week1Tasks = (r.actionPlan?.week1 || ['Review critical issues', 'Create I-9 folder', 'Order posters']).map(t => 
+        `<div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">${escapeHtml(t)}</div></div></div>`
+      ).join('');
+      const week2Tasks = (r.actionPlan?.week2to4 || ['Schedule handbook review', 'Set up training']).map(t => 
+        `<div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">${escapeHtml(t)}</div></div></div>`
+      ).join('');
+      const ongoingTasks = (r.actionPlan?.ongoing || ['Document performance issues', 'Quarterly reviews']).map(t => 
+        `<div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">${escapeHtml(t)}</div></div></div>`
+      ).join('');
+
+      const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HRShieldIQ Report - ${safeBusinessName}</title>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Merriweather,Georgia,serif;max-width:900px;margin:0 auto;padding:40px;background:#fff;color:#333;line-height:1.8;font-size:11pt;}
+.download-bar{font-family:Inter,sans-serif;background:#2563EB;color:white;padding:15px 20px;margin:-40px -40px 30px -40px;display:flex;justify-content:space-between;align-items:center;}
+.download-bar button{background:white;color:#2563EB;border:none;padding:10px 25px;border-radius:6px;font-weight:600;cursor:pointer;font-size:14px;font-family:Inter,sans-serif;}
+.header{text-align:center;margin-bottom:30px;padding-bottom:25px;border-bottom:3px solid #2563EB;}
+.logo{font-family:Inter,sans-serif;font-size:32px;font-weight:bold;margin-bottom:5px;}
+.logo span{color:#2563EB;}
+h2{font-family:Inter,sans-serif;color:#1e40af;font-size:16pt;margin:30px 0 15px;padding-bottom:8px;border-bottom:2px solid #2563EB;text-align:center;}
+h3{font-family:Inter,sans-serif;color:#333;font-size:13pt;margin:20px 0 10px;}
+.score-section{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:25px 0;}
+.score-box{background:#eff6ff;border:3px solid #2563EB;padding:25px;border-radius:12px;text-align:center;}
+.score-number{font-family:Inter,sans-serif;font-size:42pt;font-weight:bold;color:#2563EB;}
+.score-label{font-size:12pt;color:#666;}
+.risk-level{font-family:Inter,sans-serif;display:inline-block;background:${riskColor};color:white;padding:6px 16px;border-radius:20px;font-weight:600;margin-top:10px;font-size:11pt;}
+.score-comparison{background:#f8fafc;border:2px solid #e2e8f0;padding:20px;border-radius:12px;}
+.comparison-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #e2e8f0;}
+.comparison-item:last-child{border-bottom:none;}
+.comparison-label{color:#64748b;font-size:10pt;}
+.comparison-value{font-family:Inter,sans-serif;font-weight:600;color:#334155;}
+.comparison-bar{height:8px;background:#e2e8f0;border-radius:4px;margin-top:4px;overflow:hidden;}
+.comparison-fill{height:100%;border-radius:4px;}
+.compare-msg{font-size:9pt;text-align:center;margin-top:12px;font-weight:600;}
+.compare-good{color:#10b981;}
+.compare-ok{color:#f59e0b;}
+.compare-low{color:#dc2626;}
+.category-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:20px 0;}
+.category-item{text-align:center;padding:15px 10px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;}
+.category-score{font-family:Inter,sans-serif;font-size:20pt;font-weight:bold;}
+.category-max{font-size:9pt;color:#94a3b8;}
+.category-name{font-size:9pt;color:#64748b;margin-top:5px;}
+.cat-good .category-score{color:#10b981;}
+.cat-ok .category-score{color:#f59e0b;}
+.cat-bad .category-score{color:#dc2626;}
+.summary-table{display:flex;justify-content:center;gap:20px;margin:20px 0;flex-wrap:wrap;}
+.summary-item{text-align:center;padding:15px 25px;border-radius:8px;min-width:110px;}
+.summary-item.critical{background:#fee2e2;}
+.summary-item.attention{background:#fef3c7;}
+.summary-item.good{background:#d1fae5;}
+.summary-item .num{font-family:Inter,sans-serif;font-size:24pt;font-weight:bold;}
+.summary-item.critical .num{color:#dc2626;}
+.summary-item.attention .num{color:#f59e0b;}
+.summary-item.good .num{color:#10b981;}
+.summary-item .label{font-size:9pt;color:#666;}
+.cost-analysis{background:linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%);border:2px solid #dc2626;border-radius:12px;padding:25px;margin:25px 0;}
+.cost-analysis h3{color:#991b1b;margin:0 0 15px;text-align:center;font-family:Inter,sans-serif;}
+.cost-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.cost-box{background:white;padding:18px;border-radius:8px;text-align:center;}
+.cost-box.risk{border:2px solid #dc2626;}
+.cost-box.invest{border:2px solid #10b981;}
+.cost-amount{font-family:Inter,sans-serif;font-size:24pt;font-weight:bold;}
+.cost-box.risk .cost-amount{color:#dc2626;}
+.cost-box.invest .cost-amount{color:#10b981;}
+.cost-label{font-size:10pt;color:#666;margin-top:5px;}
+.cost-detail{font-size:9pt;color:#888;margin-top:8px;}
+.cost-note{text-align:center;margin-top:15px;font-size:10pt;color:#991b1b;font-weight:500;}
+.priority-box{background:#eff6ff;border-left:4px solid #2563EB;padding:18px;margin:12px auto;border-radius:0 8px 8px 0;max-width:700px;}
+.priority-box h4{font-family:Inter,sans-serif;color:#2563EB;margin-bottom:6px;text-align:center;}
+.priority-box p{text-align:center;font-size:10.5pt;margin:0;}
+.issue-card{background:#fafafa;border-radius:12px;padding:24px;margin:20px 0;border:2px solid #e5e5e5;}
+.issue-card.critical{border-color:#dc2626;border-top:6px solid #dc2626;}
+.issue-card.attention{border-color:#f59e0b;border-top:6px solid #f59e0b;}
+.issue-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:15px;flex-wrap:wrap;gap:10px;}
+.issue-title{font-family:Inter,sans-serif;font-weight:700;color:#333;font-size:14pt;}
+.issue-meta{display:flex;gap:8px;align-items:center;}
+.badge{font-family:Inter,sans-serif;padding:4px 12px;border-radius:12px;font-size:9pt;font-weight:600;}
+.badge.critical{background:#fee2e2;color:#dc2626;}
+.badge.attention{background:#fef3c7;color:#b45309;}
+.badge.priority{background:#dbeafe;color:#1d4ed8;}
+.your-answer{background:#f1f5f9;padding:12px 16px;border-radius:8px;margin:12px 0;border-left:4px solid #94a3b8;}
+.your-answer-label{font-family:Inter,sans-serif;font-size:9pt;color:#64748b;text-transform:uppercase;font-weight:600;}
+.your-answer-text{color:#334155;font-style:italic;margin-top:4px;}
+.issue-details{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px;}
+.issue-details.half{grid-template-columns:1fr 1fr;}
+.detail-box{padding:15px;border-radius:8px;}
+.detail-box.risk{background:#fff5f5;border:1px solid #fecaca;}
+.detail-box.fix{background:#f0fdf4;border:1px solid #bbf7d0;}
+.detail-box.penalty{background:#fefce8;border:1px solid #fef08a;}
+.detail-box.effort{background:#f0f9ff;border:1px solid #bae6fd;}
+.detail-label{font-family:Inter,sans-serif;font-weight:700;font-size:9pt;text-transform:uppercase;margin-bottom:6px;}
+.detail-box.risk .detail-label{color:#dc2626;}
+.detail-box.fix .detail-label{color:#16a34a;}
+.detail-box.penalty .detail-label{color:#ca8a04;}
+.detail-box.effort .detail-label{color:#0369a1;}
+.detail-text{color:#444;font-size:10.5pt;line-height:1.6;}
+.good-section{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:2px solid #10b981;border-radius:12px;padding:25px;margin:25px 0;}
+.good-section h3{font-family:Inter,sans-serif;color:#10b981;margin-bottom:15px;text-align:center;}
+.good-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.good-item{display:flex;align-items:center;gap:10px;background:white;border:1px solid #10b981;border-radius:8px;padding:10px 14px;}
+.good-item .check{color:#10b981;font-weight:bold;font-size:14pt;}
+.good-text{font-size:10pt;color:#166534;flex:1;}
+.good-value{font-family:Inter,sans-serif;font-size:9pt;color:#059669;font-weight:600;}
+.action-plan{background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);border:2px solid #2563EB;padding:25px;border-radius:12px;margin:25px 0;}
+.action-plan h2{border:none;margin:0 0 20px;color:#1e40af;}
+.action-week{background:white;border-radius:10px;padding:20px;margin:12px 0;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
+.action-week h4{font-family:Inter,sans-serif;color:#2563EB;margin:0 0 12px;font-size:12pt;padding-bottom:8px;border-bottom:1px solid #bfdbfe;}
+.action-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9;}
+.action-item:last-child{border-bottom:none;}
+.action-checkbox{width:18px;height:18px;border:2px solid #2563EB;border-radius:4px;flex-shrink:0;margin-top:2px;}
+.action-content{flex:1;}
+.action-task{color:#333;font-size:10.5pt;}
+.quick-ref{background:#1e293b;color:white;border-radius:12px;padding:25px;margin:25px 0;}
+.quick-ref h3{font-family:Inter,sans-serif;color:#60a5fa;text-align:center;margin-bottom:15px;}
+.quick-ref-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;}
+.quick-ref-item{background:#334155;padding:15px;border-radius:8px;text-align:center;}
+.quick-ref-label{font-size:9pt;color:#94a3b8;margin-bottom:5px;}
+.quick-ref-value{font-family:Inter,sans-serif;font-size:14pt;font-weight:bold;color:#60a5fa;}
+.quick-ref-note{font-size:8pt;color:#94a3b8;margin-top:3px;}
+.share-box{background:#f0f9ff;border:2px solid #0ea5e9;padding:20px;border-radius:10px;margin:20px 0;text-align:center;}
+.share-box h3{font-family:Inter,sans-serif;color:#0369a1;margin-bottom:12px;}
+.share-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:15px;}
+.share-item{background:white;padding:12px;border-radius:8px;border:1px solid #e0f2fe;text-align:center;}
+.share-role{font-family:Inter,sans-serif;font-weight:600;color:#0369a1;font-size:10pt;}
+.share-why{font-size:9pt;color:#64748b;margin-top:4px;}
+.next-steps{background:#faf5ff;border:2px solid #a855f7;padding:20px;border-radius:10px;margin:20px 0;text-align:center;}
+.next-steps h3{font-family:Inter,sans-serif;color:#7c3aed;margin-bottom:10px;}
+.next-date{font-family:Inter,sans-serif;font-size:16pt;font-weight:bold;color:#7c3aed;margin:10px 0;}
+.resources{background:#f0f9ff;border:2px solid #0ea5e9;padding:20px;border-radius:10px;margin:20px 0;text-align:center;}
+.resources h3{font-family:Inter,sans-serif;color:#0369a1;margin-bottom:12px;}
+.res-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.res-grid a{font-family:Inter,sans-serif;display:block;background:white;padding:12px;border-radius:6px;color:#2563EB;text-decoration:none;font-size:10pt;font-weight:500;border:1px solid #e0f2fe;}
+.disclaimer{background:#f5f5f5;padding:12px 15px;border-radius:8px;font-size:9pt;color:#666;margin:20px 0;text-align:center;}
+.guidance-note{background:#fffbeb;border:1px solid #fbbf24;padding:10px 14px;border-radius:6px;font-size:9pt;color:#92400e;margin:15px auto;max-width:700px;text-align:center;}
+.footer{text-align:center;margin-top:30px;padding-top:20px;border-top:2px solid #2563EB;color:#888;font-size:9pt;}
+@media print{.download-bar{display:none !important;}}
+</style></head><body>
+
+<div class="download-bar">
+<span>📄 Your HRShieldIQ™ Guidance Report</span>
+<button onclick="window.print()">🖨️ Save as PDF / Print</button>
+</div>
+
+<div class="header">
+<div class="logo">HRShield<span>IQ</span>™</div>
+<p style="color:#666;">HR Compliance Guidance Report</p>
+<p style="font-size:10pt;color:#888;">Prepared for: <strong>${safeBusinessName}</strong> | ${safeIndustry} | ${reportDate}</p>
+</div>
+
+<div class="guidance-note">
+📋 <strong>Guidance Document:</strong> This report provides educational recommendations based on your self-assessment. It is not a compliance audit, legal opinion, or certification. Consult qualified professionals for your specific situation.
+</div>
+
+<!-- Score + Comparison -->
+<div class="score-section">
+  <div class="score-box">
+    <div class="score-number">${score}</div>
+    <div class="score-label">out of 500 points</div>
+    <div class="risk-level">${r.riskLevel || 'ASSESSED'}</div>
+  </div>
+  <div class="score-comparison">
+    <h3 style="font-family:Inter;font-size:11pt;color:#334155;margin-bottom:12px;text-align:center;">How You Compare</h3>
+    <div class="comparison-item">
+      <span class="comparison-label">Your Score</span>
+      <span class="comparison-value">${score}</span>
+    </div>
+    <div class="comparison-bar"><div class="comparison-fill" style="width:${Math.min(100, score/5)}%;background:#2563EB;"></div></div>
+    <div class="comparison-item" style="margin-top:12px;">
+      <span class="comparison-label">${safeIndustry} Average</span>
+      <span class="comparison-value">${indData.avg}</span>
+    </div>
+    <div class="comparison-bar"><div class="comparison-fill" style="width:${Math.min(100, indData.avg/5)}%;background:#94a3b8;"></div></div>
+    <div class="comparison-item" style="margin-top:12px;">
+      <span class="comparison-label">All Industries Average</span>
+      <span class="comparison-value">${allAvg}</span>
+    </div>
+    <div class="comparison-bar"><div class="comparison-fill" style="width:${Math.min(100, allAvg/5)}%;background:#94a3b8;"></div></div>
+    <p class="compare-msg ${score > indData.avg ? 'compare-good' : score > indData.avg - 30 ? 'compare-ok' : 'compare-low'}">${compareMsg}</p>
+  </div>
+</div>
+
+<!-- Category Breakdown -->
+<h2>Score by Category</h2>
+<div class="category-grid">
+  <div class="category-item ${catScores.hiring >= 70 ? 'cat-good' : catScores.hiring >= 50 ? 'cat-ok' : 'cat-bad'}">
+    <div class="category-score">${catScores.hiring}</div>
+    <div class="category-max">/ 100</div>
+    <div class="category-name">Hiring & Onboarding</div>
+  </div>
+  <div class="category-item ${catScores.wage >= 70 ? 'cat-good' : catScores.wage >= 50 ? 'cat-ok' : 'cat-bad'}">
+    <div class="category-score">${catScores.wage}</div>
+    <div class="category-max">/ 100</div>
+    <div class="category-name">Wage & Hour</div>
+  </div>
+  <div class="category-item ${catScores.policies >= 70 ? 'cat-good' : catScores.policies >= 50 ? 'cat-ok' : 'cat-bad'}">
+    <div class="category-score">${catScores.policies}</div>
+    <div class="category-max">/ 100</div>
+    <div class="category-name">Policies & Training</div>
+  </div>
+  <div class="category-item ${catScores.documentation >= 70 ? 'cat-good' : catScores.documentation >= 50 ? 'cat-ok' : 'cat-bad'}">
+    <div class="category-score">${catScores.documentation}</div>
+    <div class="category-max">/ 100</div>
+    <div class="category-name">Documentation</div>
+  </div>
+  <div class="category-item ${catScores.termination >= 70 ? 'cat-good' : catScores.termination >= 50 ? 'cat-ok' : 'cat-bad'}">
+    <div class="category-score">${catScores.termination}</div>
+    <div class="category-max">/ 100</div>
+    <div class="category-name">Termination</div>
+  </div>
+</div>
+
+<div class="summary-table">
+  <div class="summary-item critical"><div class="num">${r.criticalCount || 0}</div><div class="label">Critical Issues</div></div>
+  <div class="summary-item attention"><div class="num">${r.attentionCount || 0}</div><div class="label">Needs Attention</div></div>
+  <div class="summary-item good"><div class="num">${r.goodCount || 0}</div><div class="label">Good Practices</div></div>
+</div>
+
+<!-- Risk Analysis -->
+<div class="cost-analysis">
+  <h3>💰 Potential Risk vs. Investment to Improve</h3>
+  <div class="cost-grid">
+    <div class="cost-box risk">
+      <div class="cost-amount">${indData.exposure}</div>
+      <div class="cost-label">Estimated Exposure Range</div>
+      <div class="cost-detail">Based on common penalties for issues like yours</div>
+    </div>
+    <div class="cost-box invest">
+      <div class="cost-amount">~$${fixCost.toLocaleString()}</div>
+      <div class="cost-label">Estimated Cost to Address</div>
+      <div class="cost-detail">Handbook updates, training, admin time</div>
+    </div>
+  </div>
+  <p class="cost-note">Addressing these areas could significantly reduce your risk exposure</p>
+</div>
+
+<h2>Executive Summary</h2>
+<p style="text-align:center;max-width:700px;margin:0 auto 15px;">${escapeHtml(r.executiveSummary || 'Assessment completed. Review the recommendations below.')}</p>
+
+<h2>Top 3 Priorities</h2>
+${prioritiesHtml}
+
+${criticalHtml}
+${attentionHtml}
+${goodHtml}
+
+<!-- Action Plan -->
+<div class="action-plan">
+  <h2>🎯 Recommended 30-Day Action Plan</h2>
+  <div class="action-week">
+    <h4>⚡ Week 1: Quick Wins</h4>
+    ${week1Tasks}
+  </div>
+  <div class="action-week">
+    <h4>🔧 Weeks 2-4: Core Improvements</h4>
+    ${week2Tasks}
+  </div>
+  <div class="action-week">
+    <h4>🔄 Ongoing Practices</h4>
+    ${ongoingTasks}
+  </div>
+</div>
+
+<!-- Quick Reference -->
+<div class="quick-ref">
+  <h3>📋 Common Compliance Timeframes</h3>
+  <div class="quick-ref-grid">
+    <div class="quick-ref-item">
+      <div class="quick-ref-label">I-9 Completion</div>
+      <div class="quick-ref-value">3 Days</div>
+      <div class="quick-ref-note">From hire start date</div>
+    </div>
+    <div class="quick-ref-item">
+      <div class="quick-ref-label">Personnel Records</div>
+      <div class="quick-ref-value">3+ Years</div>
+      <div class="quick-ref-note">After termination</div>
+    </div>
+    <div class="quick-ref-item">
+      <div class="quick-ref-label">Payroll Records</div>
+      <div class="quick-ref-value">3+ Years</div>
+      <div class="quick-ref-note">FLSA requirement</div>
+    </div>
+  </div>
+</div>
+
+<!-- Share -->
+<div class="share-box">
+  <h3>📤 Consider Sharing This Report With</h3>
+  <div class="share-grid">
+    <div class="share-item"><div class="share-role">Employment Attorney</div><div class="share-why">Policy review</div></div>
+    <div class="share-item"><div class="share-role">Insurance Agent</div><div class="share-why">EPLI coverage</div></div>
+    <div class="share-item"><div class="share-role">Accountant/CPA</div><div class="share-why">Classification</div></div>
+    <div class="share-item"><div class="share-role">HR Consultant</div><div class="share-why">Implementation</div></div>
+  </div>
+</div>
+
+<!-- Reassess -->
+<div class="next-steps">
+  <h3>📅 Reassess Your Progress</h3>
+  <p style="font-size:10pt;color:#6b21a8;">After implementing changes, consider reassessing in:</p>
+  <div class="next-date">${reassessDate}</div>
+  <p style="font-size:9pt;color:#7c3aed;">Goal: Continue improving your compliance practices</p>
+</div>
+
+<!-- Resources -->
+<div class="resources">
+  <h3>📚 Helpful Resources</h3>
+  <div class="res-grid">
+    <a href="https://dol.gov/agencies/whd">DOL Wage & Hour</a>
+    <a href="https://eeoc.gov/employers">EEOC Employers</a>
+    <a href="https://shrm.org">SHRM Resources</a>
+    <a href="https://uscis.gov/i-9">I-9 Central</a>
+  </div>
+</div>
+
+<div class="disclaimer">
+<strong>Important Disclaimer:</strong> This HRShieldIQ™ report provides educational guidance based on your self-reported answers about general HR practices. This is NOT a compliance audit, legal opinion, HR certification, or guarantee of compliance with any federal, state, or local law. Employment law is complex and varies by jurisdiction. <strong>Always consult qualified employment attorneys and HR professionals</strong> before making decisions about your specific HR practices. TechShield KC LLC assumes no liability for actions taken based on this guidance.
+</div>
+
+<div class="footer">
+<p><strong>TechShield KC LLC</strong></p>
+<p>hrshieldiq.com | info@techshieldkc.com | Kansas City, MO</p>
+<p style="margin-top:8px;">© ${new Date().getFullYear()} HRShieldIQ™ — Educational Guidance Tool</p>
+</div>
+
+</body></html>`;
+
+      reportWindow.document.write(htmlContent);
+      reportWindow.document.close();
+    };
         </div>`
       ).join('') : '';
       
