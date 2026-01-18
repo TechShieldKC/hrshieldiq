@@ -813,7 +813,13 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
     input[type="email"], input[type="text"] { -webkit-appearance: none; appearance: none; }
     button { min-height: 48px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     ::selection { background: ${colors.primary}; color: white; }
-    @media (max-width: 480px) { html { font-size: 18px; } }
+    @media (max-width: 480px) { 
+      html { font-size: 15px; }
+      input, select, button { font-size: 16px !important; }
+    }
+    @media (max-width: 360px) {
+      html { font-size: 14px; }
+    }
   `;
 
   // INTRO SCREEN - Landing Page
@@ -1724,6 +1730,81 @@ h3{font-family:Inter,sans-serif;color:#333;font-size:13pt;margin:20px 0 10px;}
 .disclaimer{background:#f5f5f5;padding:12px 15px;border-radius:8px;font-size:9pt;color:#666;margin:20px 0;text-align:center;}
 .guidance-note{background:#fffbeb;border:1px solid #fbbf24;padding:10px 14px;border-radius:6px;font-size:9pt;color:#92400e;margin:15px auto;max-width:700px;text-align:center;}
 .footer{text-align:center;margin-top:30px;padding-top:20px;border-top:2px solid #2563EB;color:#888;font-size:9pt;}
+
+/* Mobile Responsive Styles */
+@media screen and (max-width: 768px) {
+  body{padding:15px;font-size:10pt;line-height:1.6;}
+  .download-bar{flex-direction:column;gap:10px;text-align:center;margin:-15px -15px 20px -15px;padding:12px;}
+  .download-bar button{width:100%;padding:12px;}
+  .header{margin-bottom:20px;padding-bottom:15px;}
+  .logo{font-size:24px;}
+  .guidance-note{padding:10px;font-size:8pt;margin:10px auto;}
+  .score-section{grid-template-columns:1fr;gap:15px;}
+  .score-box{padding:20px;}
+  .score-number{font-size:32pt;}
+  .score-label{font-size:10pt;}
+  .score-comparison{padding:15px;}
+  .category-grid{grid-template-columns:repeat(3,1fr);gap:8px;}
+  .category-item{padding:10px 5px;}
+  .category-score{font-size:16pt;}
+  .category-name{font-size:8pt;}
+  .summary-table{gap:10px;}
+  .summary-item{padding:12px 15px;min-width:90px;}
+  .summary-item .num{font-size:20pt;}
+  .summary-item .label{font-size:8pt;}
+  .cost-analysis{padding:15px;}
+  .cost-grid{grid-template-columns:1fr;gap:12px;}
+  .cost-amount{font-size:20pt;}
+  h2{font-size:14pt;margin:20px 0 10px;}
+  h3{font-size:12pt;}
+  .priority-box{padding:14px;margin:10px auto;}
+  .priority-box h4{font-size:11pt;}
+  .priority-box p{font-size:9pt;}
+  .issue-card{padding:15px;margin:15px 0;}
+  .issue-header{flex-direction:column;gap:8px;}
+  .issue-title{font-size:12pt;}
+  .issue-details{grid-template-columns:1fr;}
+  .issue-details.half{grid-template-columns:1fr;}
+  .detail-box{padding:12px;}
+  .detail-text{font-size:9pt;}
+  .good-section{padding:15px;}
+  .good-grid{grid-template-columns:1fr;}
+  .good-item{padding:10px;}
+  .good-text{font-size:9pt;}
+  .action-plan{padding:15px;}
+  .action-plan h2{font-size:14pt;margin-bottom:15px;}
+  .action-week{padding:15px;margin:10px 0;}
+  .action-week h4{font-size:11pt;}
+  .action-item{padding:8px 0;}
+  .action-task{font-size:9pt;}
+  .quick-ref{padding:15px;}
+  .quick-ref h3{font-size:11pt;}
+  .quick-ref-grid{grid-template-columns:1fr;gap:10px;}
+  .quick-ref-item{padding:12px;}
+  .quick-ref-value{font-size:12pt;}
+  .share-box{padding:15px;}
+  .share-grid{grid-template-columns:1fr 1fr;gap:8px;}
+  .share-item{padding:10px;}
+  .share-role{font-size:9pt;}
+  .share-why{font-size:8pt;}
+  .next-steps{padding:15px;}
+  .next-date{font-size:14pt;}
+  .resources{padding:15px;}
+  .res-grid{grid-template-columns:1fr 1fr;gap:8px;}
+  .res-grid a{padding:10px;font-size:9pt;}
+  .disclaimer{padding:10px;font-size:8pt;}
+  .footer{margin-top:20px;padding-top:15px;font-size:8pt;}
+}
+
+@media screen and (max-width: 480px) {
+  body{padding:10px;}
+  .category-grid{grid-template-columns:repeat(2,1fr);}
+  .share-grid{grid-template-columns:1fr;}
+  .res-grid{grid-template-columns:1fr;}
+  .summary-table{flex-direction:column;align-items:center;}
+  .summary-item{width:100%;max-width:200px;}
+}
+
 @media print{.download-bar{display:none !important;}}
 </style></head><body>
 
