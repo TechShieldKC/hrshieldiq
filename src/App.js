@@ -574,10 +574,15 @@ For questions: info@techshieldkc.com
 
       const templateParams = {
         to_email: emailAddress,
-        to_name: businessInfo.name || 'Customer',
+        to_name: businessInfo.name || 'Your Organization',
         from_name: 'HRShieldIQ',
         subject: `Your HRShieldIQ Report - ${businessInfo.name || 'Assessment Complete'}`,
-        message: fullReport
+        iq_score: r.score || iqScore,
+        risk_level: r.riskLevel || 'See Report',
+        critical_issues: r.criticalCount || 0,
+        attention_items: r.attentionCount || 0,
+        good_practices: r.goodCount || 0,
+        report_summary: r.executiveSummary || 'Assessment completed. Download your PDF report for full details and recommendations.'
       };
 
       console.log('Sending email to:', emailAddress);
