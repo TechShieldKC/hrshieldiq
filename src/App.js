@@ -820,9 +820,16 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
               <span>✓ 25 questions</span>
               <span>✓ DOL & EEOC</span>
             </div>
-            <p style={{ fontSize: '0.8rem', color: '#444', marginBottom: '28px' }}>
+            <p style={{ fontSize: '0.8rem', color: '#444', marginBottom: '20px' }}>
               (Department of Labor & Equal Employment Opportunity Commission)
             </p>
+
+            {/* No HR Background Needed Box */}
+            <div style={{ backgroundColor: '#1a1a1a', borderRadius: '12px', padding: '24px 28px', marginBottom: '28px', maxWidth: '520px', marginLeft: 'auto', marginRight: 'auto', border: '1px solid #252525' }}>
+              <p style={{ fontSize: '1.05rem', color: '#ccc', lineHeight: 1.7, margin: 0, textAlign: 'center' }}>
+                <span style={{ color: '#fff', fontWeight: 700 }}>No HR background needed.</span> Most HR reviews are packed with legal terms and dense policies. HRShieldIQ uses <span style={{ color: colors.primary, fontWeight: 600 }}>75% less HR jargon</span>, helping you understand what matters <em>before</em> investing in HR support.
+              </p>
+            </div>
 
             {/* Tabs */}
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', marginBottom: '20px' }}>
