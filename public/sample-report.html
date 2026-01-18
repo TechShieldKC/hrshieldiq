@@ -1,349 +1,482 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>HRShieldIQ Report - Sunrise Family Dental</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      max-width: 850px;
-      margin: 0 auto;
-      padding: 40px;
-      background: #fff;
-      color: #333;
-      line-height: 1.6;
-      font-size: 11pt;
-    }
-    .download-bar {
-      background: #2563EB;
-      color: white;
-      padding: 15px 20px;
-      margin: -40px -40px 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .download-bar button {
-      background: white;
-      color: #2563EB;
-      border: none;
-      padding: 10px 25px;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-      padding-bottom: 25px;
-      border-bottom: 3px solid #2563EB;
-    }
-    .logo { font-size: 32px; font-weight: bold; margin-bottom: 5px; }
-    .logo span { color: #2563EB; }
-    .header p { color: #666; margin: 5px 0; }
-    .header .meta { font-size: 10pt; color: #888; }
-    h2 { color: #333; font-size: 16pt; margin: 30px 0 15px; padding-bottom: 8px; border-bottom: 2px solid #2563EB; }
-    .score-box { background: #eff6ff; border: 3px solid #2563EB; padding: 30px; border-radius: 12px; text-align: center; margin: 25px 0; }
-    .score-number { font-size: 48pt; font-weight: bold; color: #2563EB; }
-    .score-label { font-size: 14pt; color: #666; margin-top: 5px; }
-    .risk-level { display: inline-block; background: #3b82f6; color: white; padding: 8px 20px; border-radius: 20px; font-weight: 600; margin-top: 15px; }
-    .summary-table { display: flex; justify-content: center; gap: 30px; margin: 20px 0; flex-wrap: wrap; }
-    .summary-item { text-align: center; padding: 15px 25px; border-radius: 8px; min-width: 120px; }
-    .summary-item.critical { background: #fee2e2; }
-    .summary-item.attention { background: #fef3c7; }
-    .summary-item.good { background: #d1fae5; }
-    .summary-item .num { font-size: 28pt; font-weight: bold; }
-    .summary-item.critical .num { color: #dc2626; }
-    .summary-item.attention .num { color: #f59e0b; }
-    .summary-item.good .num { color: #10b981; }
-    .summary-item .label { font-size: 10pt; color: #666; }
-    .priority-box { background: #eff6ff; border-left: 4px solid #2563EB; padding: 20px; margin: 15px 0; border-radius: 0 8px 8px 0; }
-    .priority-box h4 { color: #2563EB; margin-bottom: 8px; }
-    .issue-card { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; margin: 15px 0; }
-    .issue-card.critical { border-left: 4px solid #dc2626; }
-    .issue-card.attention { border-left: 4px solid #f59e0b; }
-    .issue-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
-    .issue-title { font-weight: 600; color: #333; }
-    .badge { padding: 4px 12px; border-radius: 12px; font-size: 9pt; font-weight: 600; }
-    .badge.critical { background: #fee2e2; color: #dc2626; }
-    .badge.attention { background: #fef3c7; color: #b45309; }
-    .issue-answer { background: #f5f5f5; padding: 10px 15px; border-radius: 6px; font-style: italic; color: #666; margin: 10px 0; }
-    .issue-content p { margin: 8px 0; }
-    .good-section { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #10b981; border-radius: 12px; padding: 20px 25px; margin: 20px 0; }
-    .good-section h3 { color: #10b981; margin-bottom: 15px; font-size: 14pt; text-align: center; }
-    .good-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; }
-    .good-item { display: flex; align-items: center; gap: 8px; background: white; border: 1px solid #10b981; border-radius: 8px; padding: 10px 14px; font-size: 11pt; color: #166534; }
-    .good-item .check { color: #10b981; font-weight: bold; font-size: 14pt; }
-    .action-plan { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #2563EB; padding: 25px; border-radius: 12px; margin: 25px 0; }
-    .action-plan h2 { color: #2563EB; border: none; margin: 0 0 15px; font-size: 16pt; text-align: center; }
-    .action-week { background: white; border-radius: 8px; padding: 15px 20px; margin: 12px 0; }
-    .action-week h3 { color: #2563EB; font-size: 13pt; margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid #bfdbfe; }
-    .action-week ul { margin: 0; padding-left: 20px; }
-    .action-week li { margin: 8px 0; color: #333; font-size: 11pt; }
-    .share-box { background: #f0f9ff; border: 2px solid #0ea5e9; padding: 20px 25px; border-radius: 8px; margin: 20px 0; text-align: center; }
-    .share-box h3 { color: #0369a1; margin-bottom: 15px; font-size: 14pt; }
-    .share-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 25px; text-align: left; max-width: 650px; margin: 0 auto; }
-    .share-item { font-size: 11pt; color: #333; }
-    .consult-box { background: #eff6ff; border: 2px solid #2563EB; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
-    .resources { background: #f0f9ff; border: 2px solid #0ea5e9; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
-    .resources h3 { color: #0369a1; margin-bottom: 12px; font-size: 14pt; }
-    .res-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-    .res-grid a { display: block; background: white; padding: 12px 10px; border-radius: 6px; color: #2563EB; text-decoration: none; font-size: 10pt; font-weight: 500; text-align: center; border: 1px solid #e0f2fe; }
-    .disclaimer { background: #f5f5f5; padding: 12px 15px; border-radius: 8px; font-size: 9pt; color: #666; margin: 20px 0; text-align: center; }
-    .footer { text-align: center; margin-top: 25px; padding-top: 15px; border-top: 2px solid #2563EB; color: #888; font-size: 9pt; }
-    .footer strong { color: #2563EB; }
-    @media print { .download-bar { display: none !important; } }
-  </style>
+<meta charset="UTF-8">
+<title>HRShieldIQ Sample Report - Sunrise Family Dental</title>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+.sample-banner{font-family:Inter,sans-serif;background:#7c3aed;color:white;padding:12px 20px;margin:-40px -40px 0 -40px;text-align:center;font-weight:600;font-size:13pt;}
+body{font-family:Merriweather,Georgia,serif;max-width:900px;margin:0 auto;padding:40px;background:#fff;color:#333;line-height:1.8;font-size:11pt;}
+.download-bar{font-family:Inter,sans-serif;background:#2563EB;color:white;padding:15px 20px;margin:-40px -40px 30px -40px;display:flex;justify-content:space-between;align-items:center;}
+.download-bar button{background:white;color:#2563EB;border:none;padding:10px 25px;border-radius:6px;font-weight:600;cursor:pointer;font-size:14px;font-family:Inter,sans-serif;}
+.header{text-align:center;margin-bottom:30px;padding-bottom:25px;border-bottom:3px solid #2563EB;}
+.logo{font-family:Inter,sans-serif;font-size:32px;font-weight:bold;margin-bottom:5px;}
+.logo span{color:#2563EB;}
+h2{font-family:Inter,sans-serif;color:#1e40af;font-size:16pt;margin:30px 0 15px;padding-bottom:8px;border-bottom:2px solid #2563EB;text-align:center;}
+h3{font-family:Inter,sans-serif;color:#333;font-size:13pt;margin:20px 0 10px;}
+.score-section{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:25px 0;}
+.score-box{background:#eff6ff;border:3px solid #2563EB;padding:25px;border-radius:12px;text-align:center;}
+.score-number{font-family:Inter,sans-serif;font-size:42pt;font-weight:bold;color:#2563EB;}
+.score-label{font-size:12pt;color:#666;}
+.risk-level{font-family:Inter,sans-serif;display:inline-block;background:#3b82f6;color:white;padding:6px 16px;border-radius:20px;font-weight:600;margin-top:10px;font-size:11pt;}
+.score-comparison{background:#f8fafc;border:2px solid #e2e8f0;padding:20px;border-radius:12px;}
+.comparison-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #e2e8f0;}
+.comparison-item:last-child{border-bottom:none;}
+.comparison-label{color:#64748b;font-size:10pt;}
+.comparison-value{font-family:Inter,sans-serif;font-weight:600;color:#334155;}
+.comparison-bar{height:8px;background:#e2e8f0;border-radius:4px;margin-top:4px;overflow:hidden;}
+.comparison-fill{height:100%;border-radius:4px;}
+.compare-msg{font-size:9pt;text-align:center;margin-top:12px;font-weight:600;}
+.compare-good{color:#10b981;}
+.compare-ok{color:#f59e0b;}
+.compare-low{color:#dc2626;}
+.category-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:20px 0;}
+.category-item{text-align:center;padding:15px 10px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;}
+.category-score{font-family:Inter,sans-serif;font-size:20pt;font-weight:bold;}
+.category-max{font-size:9pt;color:#94a3b8;}
+.category-name{font-size:9pt;color:#64748b;margin-top:5px;}
+.cat-good .category-score{color:#10b981;}
+.cat-ok .category-score{color:#f59e0b;}
+.cat-bad .category-score{color:#dc2626;}
+.summary-table{display:flex;justify-content:center;gap:20px;margin:20px 0;flex-wrap:wrap;}
+.summary-item{text-align:center;padding:15px 25px;border-radius:8px;min-width:110px;}
+.summary-item.critical{background:#fee2e2;}
+.summary-item.attention{background:#fef3c7;}
+.summary-item.good{background:#d1fae5;}
+.summary-item .num{font-family:Inter,sans-serif;font-size:24pt;font-weight:bold;}
+.summary-item.critical .num{color:#dc2626;}
+.summary-item.attention .num{color:#f59e0b;}
+.summary-item.good .num{color:#10b981;}
+.summary-item .label{font-size:9pt;color:#666;}
+.cost-analysis{background:linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%);border:2px solid #dc2626;border-radius:12px;padding:25px;margin:25px 0;}
+.cost-analysis h3{color:#991b1b;margin:0 0 15px;text-align:center;font-family:Inter,sans-serif;}
+.cost-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.cost-box{background:white;padding:18px;border-radius:8px;text-align:center;}
+.cost-box.risk{border:2px solid #dc2626;}
+.cost-box.invest{border:2px solid #10b981;}
+.cost-amount{font-family:Inter,sans-serif;font-size:24pt;font-weight:bold;}
+.cost-box.risk .cost-amount{color:#dc2626;}
+.cost-box.invest .cost-amount{color:#10b981;}
+.cost-label{font-size:10pt;color:#666;margin-top:5px;}
+.cost-detail{font-size:9pt;color:#888;margin-top:8px;}
+.cost-note{text-align:center;margin-top:15px;font-size:10pt;color:#991b1b;font-weight:500;}
+.priority-box{background:#eff6ff;border-left:4px solid #2563EB;padding:18px;margin:12px auto;border-radius:0 8px 8px 0;max-width:700px;}
+.priority-box h4{font-family:Inter,sans-serif;color:#2563EB;margin-bottom:6px;text-align:center;}
+.priority-box p{text-align:center;font-size:10.5pt;margin:0;}
+.issue-card{background:#fafafa;border-radius:12px;padding:24px;margin:20px 0;border:2px solid #e5e5e5;}
+.issue-card.critical{border-color:#dc2626;border-top:6px solid #dc2626;}
+.issue-card.attention{border-color:#f59e0b;border-top:6px solid #f59e0b;}
+.issue-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:15px;flex-wrap:wrap;gap:10px;}
+.issue-title{font-family:Inter,sans-serif;font-weight:700;color:#333;font-size:14pt;}
+.issue-meta{display:flex;gap:8px;align-items:center;}
+.badge{font-family:Inter,sans-serif;padding:4px 12px;border-radius:12px;font-size:9pt;font-weight:600;}
+.badge.critical{background:#fee2e2;color:#dc2626;}
+.badge.attention{background:#fef3c7;color:#b45309;}
+.badge.priority{background:#dbeafe;color:#1d4ed8;}
+.your-answer{background:#f1f5f9;padding:12px 16px;border-radius:8px;margin:12px 0;border-left:4px solid #94a3b8;}
+.your-answer-label{font-family:Inter,sans-serif;font-size:9pt;color:#64748b;text-transform:uppercase;font-weight:600;}
+.your-answer-text{color:#334155;font-style:italic;margin-top:4px;}
+.issue-details{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px;}
+.issue-details.half{grid-template-columns:1fr 1fr;}
+.detail-box{padding:15px;border-radius:8px;}
+.detail-box.risk{background:#fff5f5;border:1px solid #fecaca;}
+.detail-box.fix{background:#f0fdf4;border:1px solid #bbf7d0;}
+.detail-box.penalty{background:#fefce8;border:1px solid #fef08a;}
+.detail-box.effort{background:#f0f9ff;border:1px solid #bae6fd;}
+.detail-label{font-family:Inter,sans-serif;font-weight:700;font-size:9pt;text-transform:uppercase;margin-bottom:6px;}
+.detail-box.risk .detail-label{color:#dc2626;}
+.detail-box.fix .detail-label{color:#16a34a;}
+.detail-box.penalty .detail-label{color:#ca8a04;}
+.detail-box.effort .detail-label{color:#0369a1;}
+.detail-text{color:#444;font-size:10.5pt;line-height:1.6;}
+.penalty-amount{font-family:Inter,sans-serif;font-size:16pt;font-weight:bold;color:#dc2626;}
+.good-section{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:2px solid #10b981;border-radius:12px;padding:25px;margin:25px 0;}
+.good-section h3{font-family:Inter,sans-serif;color:#10b981;margin-bottom:15px;text-align:center;}
+.good-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.good-item{display:flex;align-items:center;gap:10px;background:white;border:1px solid #10b981;border-radius:8px;padding:10px 14px;}
+.good-item .check{color:#10b981;font-weight:bold;font-size:14pt;}
+.good-text{font-size:10pt;color:#166534;flex:1;}
+.good-value{font-family:Inter,sans-serif;font-size:9pt;color:#059669;font-weight:600;}
+.action-plan{background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);border:2px solid #2563EB;padding:25px;border-radius:12px;margin:25px 0;}
+.action-plan h2{border:none;margin:0 0 20px;color:#1e40af;}
+.action-week{background:white;border-radius:10px;padding:20px;margin:12px 0;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
+.action-week h4{font-family:Inter,sans-serif;color:#2563EB;margin:0 0 12px;font-size:12pt;padding-bottom:8px;border-bottom:1px solid #bfdbfe;}
+.action-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9;}
+.action-item:last-child{border-bottom:none;}
+.action-checkbox{width:18px;height:18px;border:2px solid #2563EB;border-radius:4px;flex-shrink:0;margin-top:2px;}
+.action-content{flex:1;}
+.action-task{color:#333;font-size:10.5pt;}
+.action-meta{display:flex;gap:15px;margin-top:4px;}
+.action-time{font-family:Inter,sans-serif;font-size:9pt;color:#2563EB;font-weight:500;}
+.action-owner{font-family:Inter,sans-serif;font-size:9pt;color:#64748b;}
+.quick-ref{background:#1e293b;color:white;border-radius:12px;padding:25px;margin:25px 0;}
+.quick-ref h3{font-family:Inter,sans-serif;color:#60a5fa;text-align:center;margin-bottom:15px;}
+.quick-ref-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;}
+.quick-ref-item{background:#334155;padding:15px;border-radius:8px;text-align:center;}
+.quick-ref-label{font-size:9pt;color:#94a3b8;margin-bottom:5px;}
+.quick-ref-value{font-family:Inter,sans-serif;font-size:14pt;font-weight:bold;color:#60a5fa;}
+.quick-ref-note{font-size:8pt;color:#94a3b8;margin-top:3px;}
+.share-box{background:#f0f9ff;border:2px solid #0ea5e9;padding:20px;border-radius:10px;margin:20px 0;text-align:center;}
+.share-box h3{font-family:Inter,sans-serif;color:#0369a1;margin-bottom:12px;}
+.share-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:15px;}
+.share-item{background:white;padding:12px;border-radius:8px;border:1px solid #e0f2fe;text-align:center;}
+.share-role{font-family:Inter,sans-serif;font-weight:600;color:#0369a1;font-size:10pt;}
+.share-why{font-size:9pt;color:#64748b;margin-top:4px;}
+.next-steps{background:#faf5ff;border:2px solid #a855f7;padding:20px;border-radius:10px;margin:20px 0;text-align:center;}
+.next-steps h3{font-family:Inter,sans-serif;color:#7c3aed;margin-bottom:10px;}
+.next-date{font-family:Inter,sans-serif;font-size:16pt;font-weight:bold;color:#7c3aed;margin:10px 0;}
+.resources-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.disclaimer{background:#f5f5f5;padding:12px 15px;border-radius:8px;font-size:9pt;color:#666;margin:20px 0;text-align:center;}
+.footer{text-align:center;margin-top:30px;padding-top:20px;border-top:2px solid #2563EB;color:#888;font-size:9pt;}
+@media print{.download-bar{display:none !important;}.sample-banner{display:none !important;}}
+</style>
 </head>
 <body>
-  <div class="download-bar">
-    <span>📄 Your HRShieldIQ™ Report</span>
-    <button onclick="window.print()">🖨️ Save as PDF / Print</button>
-  </div>
 
-  <div class="header">
-    <div class="logo">HRShield<span>IQ</span>™</div>
-    <p>Employment Compliance Assessment</p>
-    <p class="meta">Prepared for: <strong>Sunrise Family Dental</strong> | Healthcare / Medical | January 2026</p>
-  </div>
+<div class="sample-banner">📋 SAMPLE REPORT — This is an example of what your personalized report will look like</div>
 
+<div class="download-bar">
+<span>📄 Your HRShieldIQ™ Report</span>
+<button onclick="window.print()">🖨️ Save as PDF / Print</button>
+</div>
+
+<div class="header">
+<div class="logo">HRShield<span>IQ</span>™</div>
+<p style="color:#666;">HR Compliance Assessment</p>
+<p style="font-size:10pt;color:#888;">Prepared for: <strong>Sunrise Family Dental</strong> | Healthcare / Medical | January 17, 2026</p>
+</div>
+
+<!-- Score + Comparison -->
+<div class="score-section">
   <div class="score-box">
     <div class="score-number">324</div>
     <div class="score-label">out of 500 points</div>
-    <div class="risk-level">MODERATE RISK</div>
+    <div class="risk-level">MODERATE</div>
   </div>
-
-  <div class="summary-table">
-    <div class="summary-item critical"><div class="num">3</div><div class="label">Critical Issues</div></div>
-    <div class="summary-item attention"><div class="num">5</div><div class="label">Needs Attention</div></div>
-    <div class="summary-item good"><div class="num">17</div><div class="label">Good Practices</div></div>
+  <div class="score-comparison">
+    <h3 style="font-family:Inter;font-size:11pt;color:#334155;margin-bottom:12px;text-align:center;">How You Compare</h3>
+    <div class="comparison-item">
+      <span class="comparison-label">Your Score</span>
+      <span class="comparison-value">324</span>
+    </div>
+    <div class="comparison-bar"><div class="comparison-fill" style="width:65%;background:#2563EB;"></div></div>
+    <div class="comparison-item" style="margin-top:12px;">
+      <span class="comparison-label">Healthcare / Medical Average</span>
+      <span class="comparison-value">285</span>
+    </div>
+    <div class="comparison-bar"><div class="comparison-fill" style="width:57%;background:#94a3b8;"></div></div>
+    <div class="comparison-item" style="margin-top:12px;">
+      <span class="comparison-label">All Industries Average</span>
+      <span class="comparison-value">310</span>
+    </div>
+    <div class="comparison-bar"><div class="comparison-fill" style="width:62%;background:#94a3b8;"></div></div>
+    <p class="compare-msg compare-good">✓ You're above average for your industry!</p>
   </div>
+</div>
 
-  <h2>Executive Summary</h2>
-  <p>Sunrise Family Dental demonstrates solid foundational HR practices but has significant gaps in documentation and I-9 compliance that create regulatory exposure. As a healthcare employer, you face heightened scrutiny from both DOL and state licensing boards. Your score of 324/500 places you in the MODERATE RISK category—better than average for small healthcare practices, but with three critical issues requiring immediate attention to avoid potential fines ranging from $252 to $25,000+ per violation.</p>
+<!-- Category Breakdown -->
+<h2>Score by Category</h2>
+<div class="category-grid">
+  <div class="category-item cat-good">
+    <div class="category-score">72</div>
+    <div class="category-max">/ 100</div>
+    <div class="category-name">Hiring & Onboarding</div>
+  </div>
+  <div class="category-item cat-ok">
+    <div class="category-score">56</div>
+    <div class="category-max">/ 100</div>
+    <div class="category-name">Wage & Hour</div>
+  </div>
+  <div class="category-item cat-good">
+    <div class="category-score">68</div>
+    <div class="category-max">/ 100</div>
+    <div class="category-name">Policies & Training</div>
+  </div>
+  <div class="category-item cat-bad">
+    <div class="category-score">48</div>
+    <div class="category-max">/ 100</div>
+    <div class="category-name">Documentation</div>
+  </div>
+  <div class="category-item cat-good">
+    <div class="category-score">80</div>
+    <div class="category-max">/ 100</div>
+    <div class="category-name">Termination</div>
+  </div>
+</div>
 
-  <h2>Top 3 Priorities</h2>
+<div class="summary-table">
+  <div class="summary-item critical"><div class="num">3</div><div class="label">Critical Issues</div></div>
+  <div class="summary-item attention"><div class="num">5</div><div class="label">Needs Attention</div></div>
+  <div class="summary-item good"><div class="num">17</div><div class="label">Good Practices</div></div>
+</div>
+
+<!-- Risk Analysis -->
+<div class="cost-analysis">
+  <h3>💰 Risk vs. Investment Analysis</h3>
+  <div class="cost-grid">
+    <div class="cost-box risk">
+      <div class="cost-amount">$50,000+</div>
+      <div class="cost-label">Potential Exposure</div>
+      <div class="cost-detail">Based on your 3 critical issues:<br>Fines + lawsuit defense + penalties</div>
+    </div>
+    <div class="cost-box invest">
+      <div class="cost-amount">~$2,500</div>
+      <div class="cost-label">Est. Cost to Fix</div>
+      <div class="cost-detail">Handbook update + training + minor admin time</div>
+    </div>
+  </div>
+  <p class="cost-note">Fixing these issues could save you <strong>20x your investment</strong></p>
+</div>
+
+<h2>Executive Summary</h2>
+<p style="text-align:center;max-width:700px;margin:0 auto 15px;">Solid HR foundation with gaps in documentation and I-9 compliance. As a healthcare employer, you face extra DOL scrutiny. Three critical issues need immediate attention—potential fines $252-$25,000+.</p>
+
+<div style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:8px;padding:14px 18px;margin:15px auto;max-width:700px;text-align:center;">
+<p style="margin:0 0 4px;font-family:Inter;font-weight:600;color:#555;font-size:10pt;">What This Report Does Not Mean</p>
+<p style="margin:0;color:#666;font-size:9pt;">This is not a DOL finding or legal determination. It highlights areas to strengthen based on common compliance requirements.</p>
+</div>
+
+<h2>Top 3 Priorities</h2>
+<div class="priority-box"><h4>1. Separate I-9 Forms from Personnel Files</h4><p>ICE audits require I-9s produced separately. Fines: $252-$2,507 per form.</p></div>
+<div class="priority-box"><h4>2. Formalize Performance Documentation</h4><p>Verbal-only warnings can't be proven in court. Written records protect you.</p></div>
+<div class="priority-box"><h4>3. Update Employee Handbook</h4><p>3+ years old = missing current FMLA rules, harassment definitions.</p></div>
+
+<h2>Critical Issues</h2>
+
+<div class="issue-card critical">
+  <div class="issue-header">
+    <div class="issue-title">I-9 Storage Location</div>
+    <div class="issue-meta">
+      <span class="badge critical">CRITICAL</span>
+      <span class="badge priority">FIX FIRST</span>
+    </div>
+  </div>
+  <div class="your-answer">
+    <div class="your-answer-label">Your Answer</div>
+    <div class="your-answer-text">"In each employee's personnel file"</div>
+  </div>
+  <div class="issue-details">
+    <div class="detail-box risk"><div class="detail-label">⚠️ Risk</div><div class="detail-text">ICE audits require I-9s produced separately. Mixed storage violates federal requirements and exposes confidential employee data.</div></div>
+    <div class="detail-box penalty"><div class="detail-label">💰 Potential Penalty</div><div class="penalty-amount">$252 - $2,507</div><div class="detail-text">Per form, first offense. Repeat violations: up to $25,076/form.</div></div>
+    <div class="detail-box fix"><div class="detail-label">✅ How to Fix</div><div class="detail-text">Create dedicated I-9 binder or digital folder. Move all existing I-9s there. Update new hire checklist.</div></div>
+    <div class="detail-box effort"><div class="detail-label">⏱️ Effort</div><div class="detail-text"><strong>2-3 hours</strong> to reorganize<br>No cost required</div></div>
+  </div>
+</div>
+
+<div class="issue-card critical">
+  <div class="issue-header">
+    <div class="issue-title">Performance Documentation</div>
+    <div class="issue-meta">
+      <span class="badge critical">CRITICAL</span>
+    </div>
+  </div>
+  <div class="your-answer">
+    <div class="your-answer-label">Your Answer</div>
+    <div class="your-answer-text">"Verbal conversations only"</div>
+  </div>
+  <div class="issue-details">
+    <div class="detail-box risk"><div class="detail-label">⚠️ Risk</div><div class="detail-text">No written records = can't defend termination decisions. Verbal warnings are impossible to prove in court.</div></div>
+    <div class="detail-box penalty"><div class="detail-label">💰 Potential Penalty</div><div class="penalty-amount">$75,000+</div><div class="detail-text">Average cost to defend wrongful termination lawsuit, even if you win.</div></div>
+    <div class="detail-box fix"><div class="detail-label">✅ How to Fix</div><div class="detail-text">Create simple written warning form. Even email summaries after conversations create paper trail.</div></div>
+    <div class="detail-box effort"><div class="detail-label">⏱️ Effort</div><div class="detail-text"><strong>1 hour</strong> to create template<br>10-15 min per incident ongoing</div></div>
+  </div>
+</div>
+
+<div class="issue-card critical">
+  <div class="issue-header">
+    <div class="issue-title">Employee Handbook Currency</div>
+    <div class="issue-meta">
+      <span class="badge critical">CRITICAL</span>
+    </div>
+  </div>
+  <div class="your-answer">
+    <div class="your-answer-label">Your Answer</div>
+    <div class="your-answer-text">"3+ years ago"</div>
+  </div>
+  <div class="issue-details">
+    <div class="detail-box risk"><div class="detail-label">⚠️ Risk</div><div class="detail-text">Missing current FMLA rules, harassment definitions, state leave laws. Outdated policies create liability if you're not following them.</div></div>
+    <div class="detail-box penalty"><div class="detail-label">💰 Potential Penalty</div><div class="penalty-amount">$15,000+</div><div class="detail-text">Per claim if policies don't match current law or your actual practices.</div></div>
+    <div class="detail-box fix"><div class="detail-label">✅ How to Fix</div><div class="detail-text">Have employment attorney or HR consultant review. Or use a reputable template for self-update.</div></div>
+    <div class="detail-box effort"><div class="detail-label">⏱️ Effort</div><div class="detail-text"><strong>$500-1,500</strong> professional<br>OR 4-6 hours DIY with template</div></div>
+  </div>
+</div>
+
+<h2>Items Needing Attention</h2>
+
+<div class="issue-card attention">
+  <div class="issue-header">
+    <div class="issue-title">Harassment Training</div>
+    <span class="badge attention">ATTENTION</span>
+  </div>
+  <div class="your-answer">
+    <div class="your-answer-label">Your Answer</div>
+    <div class="your-answer-text">"During onboarding only"</div>
+  </div>
+  <div class="issue-details half">
+    <div class="detail-box fix"><div class="detail-label">✅ How to Fix</div><div class="detail-text">Add annual training. Many states now require it. Online options: $15-30/employee.</div></div>
+    <div class="detail-box effort"><div class="detail-label">⏱️ Effort</div><div class="detail-text"><strong>1-2 hours/year</strong> per employee</div></div>
+  </div>
+</div>
+
+<div class="issue-card attention">
+  <div class="issue-header">
+    <div class="issue-title">Employment Poster Compliance</div>
+    <span class="badge attention">ATTENTION</span>
+  </div>
+  <div class="your-answer">
+    <div class="your-answer-label">Your Answer</div>
+    <div class="your-answer-text">"Yes, but may be outdated"</div>
+  </div>
+  <div class="issue-details half">
+    <div class="detail-box fix"><div class="detail-label">✅ How to Fix</div><div class="detail-text">Order current year poster set. Requirements change yearly. Fines: $100-$35,000.</div></div>
+    <div class="detail-box effort"><div class="detail-label">⏱️ Effort</div><div class="detail-text"><strong>30 minutes</strong> + $30-75</div></div>
+  </div>
+</div>
+
+<!-- Good Practices -->
+<div class="good-section">
+  <h3>✓ Good Practices Already in Place (17)</h3>
+  <div class="good-grid">
+    <div class="good-item"><span class="check">✓</span><span class="good-text">I-9s completed within 3 days</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">FCRA-compliant background checks</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">Clear job descriptions</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">Proper exempt classification</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">Accurate time tracking</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">Consistent pay schedules</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">Sexual harassment policy exists</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">Complaint process documented</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">Final paychecks on time</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">Organized personnel files</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">Record retention followed</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">Termination documented</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">COBRA notices handled</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">Workers' comp current</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">At-will statement clear</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">Access removed on departure</span><span class="good-value">+20</span></div>
+    <div class="good-item"><span class="check">✓</span><span class="good-text">Consistent discipline process</span><span class="good-value">+20</span></div>
+  </div>
+</div>
+
+<!-- Action Plan -->
+<div class="action-plan">
+  <h2>🎯 Your 30-Day Action Plan</h2>
+  <div class="action-week">
+    <h4>⚡ Week 1: Quick Wins (This Week!)</h4>
+    <div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">Create separate I-9 storage folder/binder</div><div class="action-meta"><span class="action-time">⏱️ 2 hours</span><span class="action-owner">👤 Office Manager</span></div></div></div>
+    <div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">Move all existing I-9s to new location</div><div class="action-meta"><span class="action-time">⏱️ 1-2 hours</span><span class="action-owner">👤 Office Manager</span></div></div></div>
+    <div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">Order current year employment posters</div><div class="action-meta"><span class="action-time">⏱️ 15 min</span><span class="action-owner">👤 Anyone | 💵 $30-75</span></div></div></div>
+    <div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">Create written warning template</div><div class="action-meta"><span class="action-time">⏱️ 1 hour</span><span class="action-owner">👤 Owner/Manager</span></div></div></div>
+  </div>
+  <div class="action-week">
+    <h4>🔧 Weeks 2-4: Core Improvements</h4>
+    <div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">Schedule handbook review with attorney or HR consultant</div><div class="action-meta"><span class="action-time">⏱️ 1 call</span><span class="action-owner">👤 Owner | 💵 $500-1,500</span></div></div></div>
+    <div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">Research and select harassment training provider</div><div class="action-meta"><span class="action-time">⏱️ 1-2 hours</span><span class="action-owner">👤 Manager</span></div></div></div>
+    <div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">Create exit interview form and process</div><div class="action-meta"><span class="action-time">⏱️ 1 hour</span><span class="action-owner">👤 Manager</span></div></div></div>
+  </div>
+  <div class="action-week">
+    <h4>🔄 Ongoing (Set Calendar Reminders)</h4>
+    <div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">Document all performance conversations in writing</div><div class="action-meta"><span class="action-time">⏱️ 10-15 min each</span><span class="action-owner">👤 All Managers</span></div></div></div>
+    <div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">Quarterly I-9 audit (set for April, July, October, January)</div><div class="action-meta"><span class="action-time">⏱️ 1 hour quarterly</span><span class="action-owner">👤 Office Manager</span></div></div></div>
+    <div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">Annual harassment training for all staff (set for each January)</div><div class="action-meta"><span class="action-time">⏱️ 1-2 hours/person</span><span class="action-owner">👤 All Staff</span></div></div></div>
+  </div>
+</div>
+
+<!-- Quick Reference -->
+<div class="quick-ref">
+  <h3>📋 Quick Reference Card</h3>
+  <div class="quick-ref-grid">
+    <div class="quick-ref-item">
+      <div class="quick-ref-label">I-9 Deadline</div>
+      <div class="quick-ref-value">3 Days</div>
+      <div class="quick-ref-note">From hire start date</div>
+    </div>
+    <div class="quick-ref-item">
+      <div class="quick-ref-label">Personnel Records</div>
+      <div class="quick-ref-value">3 Years</div>
+      <div class="quick-ref-note">After termination</div>
+    </div>
+    <div class="quick-ref-item">
+      <div class="quick-ref-label">Payroll Records</div>
+      <div class="quick-ref-value">3 Years</div>
+      <div class="quick-ref-note">FLSA requirement</div>
+    </div>
+  </div>
+</div>
+
+<!-- Share -->
+<div class="share-box">
+  <h3>📤 Who Should See This Report</h3>
+  <div class="share-grid">
+    <div class="share-item"><div class="share-role">Employment Attorney</div><div class="share-why">Handbook review</div></div>
+    <div class="share-item"><div class="share-role">Insurance Agent</div><div class="share-why">EPLI coverage</div></div>
+    <div class="share-item"><div class="share-role">Accountant/CPA</div><div class="share-why">Classification questions</div></div>
+    <div class="share-item"><div class="share-role">Office Manager</div><div class="share-why">Implementation</div></div>
+  </div>
+</div>
+
+<!-- Reassess -->
+<div class="next-steps">
+  <h3>📅 Reassess Your Compliance</h3>
+  <p style="font-size:10pt;color:#6b21a8;">After implementing these changes, reassess in:</p>
+  <div class="next-date">90 Days: April 17, 2026</div>
+  <p style="font-size:9pt;color:#7c3aed;">Goal: Move from MODERATE → STRONG (400+ points)</p>
+</div>
+
+<!-- Resources -->
+<div style="background:#eff6ff;border-radius:12px;padding:25px;margin:25px 0;">
+  <h3 style="font-family:Inter,sans-serif;color:#2563EB;text-align:center;margin:0 0 8px;font-size:14pt;">📚 Free Resources</h3>
+  <p style="text-align:center;color:#64748b;font-size:10pt;margin:0 0 20px;">Trusted government and nonprofit resources for small business HR compliance:</p>
   
-  <div class="priority-box">
-    <h4>1. Separate I-9 Forms from Personnel Files</h4>
-    <p>ICE requires I-9s to be produced within 3 days of an audit notice—without exposing other employee records. Storing them in personnel files violates this requirement and can result in fines of $252-$2,507 per form, even if the forms themselves are correctly completed.</p>
-  </div>
-
-  <div class="priority-box">
-    <h4>2. Formalize Performance Documentation</h4>
-    <p>Your verbal-only approach to performance issues leaves you vulnerable to wrongful termination claims. In healthcare, where credentialing and patient safety are paramount, written documentation is essential for defending employment decisions.</p>
-  </div>
-
-  <div class="priority-box">
-    <h4>3. Update Employee Handbook</h4>
-    <p>A handbook last reviewed 3+ years ago likely lacks current COVID policies, updated harassment definitions, and recent state leave law changes. Outdated handbooks can actually create liability by establishing policies you no longer follow.</p>
-  </div>
-
-  <h2>🔴 Critical Issues</h2>
-
-  <div class="issue-card critical">
-    <div class="issue-header">
-      <span class="issue-title">I-9 Storage Location</span>
-      <span class="badge critical">CRITICAL</span>
+  <div class="resources-grid">
+    <div style="background:white;border-radius:10px;padding:18px;border:1px solid #e2e8f0;">
+      <a href="https://www.dol.gov/agencies/whd" style="color:#2563EB;font-weight:600;font-size:11pt;text-decoration:none;font-family:Inter,sans-serif;">DOL Wage & Hour Division</a>
+      <p style="color:#475569;font-size:9.5pt;margin:8px 0 0;line-height:1.6;">Department of Labor — federal wage laws, overtime rules, minimum wage requirements, and employer compliance assistance.</p>
     </div>
-    <div class="issue-answer">"In each employee's personnel file"</div>
-    <div class="issue-content">
-      <p><strong>Risk:</strong> During an ICE audit, you must produce I-9s without exposing confidential employee information. Mixed storage makes this impossible and can result in fines of $252-$2,507 per form for first offenses, escalating to $2,507-$25,076 for repeat violations.</p>
-      <p><strong>Fix:</strong> Create a dedicated I-9 binder or digital folder. Move all existing I-9s to this location. Implement a checklist ensuring new hire I-9s go directly to the separate file.</p>
-      <p><strong>Effort:</strong> ⏱️ 2-3 hours to reorganize existing files</p>
+    <div style="background:white;border-radius:10px;padding:18px;border:1px solid #e2e8f0;">
+      <a href="https://www.eeoc.gov/employers" style="color:#2563EB;font-weight:600;font-size:11pt;text-decoration:none;font-family:Inter,sans-serif;">EEOC Employer Resources</a>
+      <p style="color:#475569;font-size:9.5pt;margin:8px 0 0;line-height:1.6;">Equal Employment Opportunity Commission — anti-discrimination laws, harassment prevention, and required workplace posters.</p>
+    </div>
+    <div style="background:white;border-radius:10px;padding:18px;border:1px solid #e2e8f0;">
+      <a href="https://www.osha.gov/employers" style="color:#2563EB;font-weight:600;font-size:11pt;text-decoration:none;font-family:Inter,sans-serif;">OSHA Employer Resources</a>
+      <p style="color:#475569;font-size:9.5pt;margin:8px 0 0;line-height:1.6;">Occupational Safety & Health Administration — workplace safety requirements, injury reporting, and free consultation programs.</p>
+    </div>
+    <div style="background:white;border-radius:10px;padding:18px;border:1px solid #e2e8f0;">
+      <a href="https://www.uscis.gov/i-9" style="color:#2563EB;font-weight:600;font-size:11pt;text-decoration:none;font-family:Inter,sans-serif;">USCIS I-9 Central</a>
+      <p style="color:#475569;font-size:9.5pt;margin:8px 0 0;line-height:1.6;">U.S. Citizenship & Immigration Services — Form I-9 instructions, acceptable documents list, and E-Verify information.</p>
+    </div>
+    <div style="background:white;border-radius:10px;padding:18px;border:1px solid #e2e8f0;">
+      <a href="https://www.irs.gov/businesses/small-businesses-self-employed/independent-contractor-self-employed-or-employee" style="color:#2563EB;font-weight:600;font-size:11pt;text-decoration:none;font-family:Inter,sans-serif;">IRS Worker Classification</a>
+      <p style="color:#475569;font-size:9.5pt;margin:8px 0 0;line-height:1.6;">Internal Revenue Service — employee vs. contractor rules, Form SS-8 determinations, and payroll tax requirements.</p>
+    </div>
+    <div style="background:white;border-radius:10px;padding:18px;border:1px solid #e2e8f0;">
+      <a href="https://www.shrm.org/topics-tools" style="color:#2563EB;font-weight:600;font-size:11pt;text-decoration:none;font-family:Inter,sans-serif;">SHRM HR Toolkit</a>
+      <p style="color:#475569;font-size:9.5pt;margin:8px 0 0;line-height:1.6;">Society for Human Resource Management — HR templates, policy samples, and best practices from the leading HR professional organization.</p>
     </div>
   </div>
+</div>
 
-  <div class="issue-card critical">
-    <div class="issue-header">
-      <span class="issue-title">Performance Documentation</span>
-      <span class="badge critical">CRITICAL</span>
-    </div>
-    <div class="issue-answer">"Verbal conversations only"</div>
-    <div class="issue-content">
-      <p><strong>Risk:</strong> Without written records, you cannot prove performance issues existed before termination. In wrongful termination suits, the burden is on the employer to demonstrate legitimate business reasons. Verbal warnings are nearly impossible to prove in court.</p>
-      <p><strong>Fix:</strong> Implement a simple written warning form. Even a dated email summary sent after verbal discussions creates a paper trail. For healthcare staff, tie documentation to patient care standards where applicable.</p>
-      <p><strong>Effort:</strong> ⏱️ 1 hour to create template, ongoing 10-15 min per incident</p>
-    </div>
-  </div>
+<!-- Sources -->
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;margin:20px 0;">
+  <h4 style="font-family:Inter,sans-serif;font-size:10pt;color:#475569;margin:0 0 10px;text-align:center;">📖 Data Sources & References</h4>
+  <p style="font-size:8pt;color:#64748b;margin:0;line-height:1.8;text-align:center;">
+    Industry statistics referenced in this report are compiled from publicly available sources including:
+    U.S. Department of Labor (DOL) Wage & Hour Division enforcement data •
+    Occupational Safety and Health Administration (OSHA) inspection statistics •
+    Equal Employment Opportunity Commission (EEOC) guidance documents •
+    Society for Human Resource Management (SHRM) best practices •
+    Hiscox Employment Practices Liability Report •
+    National Federation of Independent Business (NFIB) surveys •
+    State licensing board compliance data.
+    <br/><br/>
+    <strong>Industry-Specific Source:</strong> DOL Wage & Hour Division Enforcement Data
+  </p>
+</div>
 
-  <div class="issue-card critical">
-    <div class="issue-header">
-      <span class="issue-title">Employee Handbook Currency</span>
-      <span class="badge critical">CRITICAL</span>
-    </div>
-    <div class="issue-answer">"3+ years ago"</div>
-    <div class="issue-content">
-      <p><strong>Risk:</strong> Employment law has changed significantly since 2022. Your handbook likely lacks required COVID policies, updated FMLA provisions, current harassment definitions, and recent state-specific leave laws. An outdated handbook can be used against you if it establishes expectations you're not meeting.</p>
-      <p><strong>Fix:</strong> Have an employment attorney or HR consultant review and update your handbook. At minimum, add a statement that policies may be updated and the current version supersedes previous versions.</p>
-      <p><strong>Effort:</strong> ⏱️ Professional review: $500-1,500; Self-update with template: 4-6 hours</p>
-    </div>
-  </div>
+<div class="disclaimer">
+<strong>Important:</strong> This HRShieldIQ™ assessment is educational guidance based on self-reported answers. It is not an HR audit, compliance certification, or legal advice. Always consult qualified professionals for your specific situation.
+</div>
 
-  <h2>🟡 Items Needing Attention</h2>
-
-  <div class="issue-card attention">
-    <div class="issue-header">
-      <span class="issue-title">Harassment Training</span>
-      <span class="badge attention">ATTENTION</span>
-    </div>
-    <div class="issue-answer">"During onboarding only"</div>
-    <div class="issue-content">
-      <p><strong>Risk:</strong> One-time training doesn't demonstrate ongoing good faith effort to prevent harassment. Many states now require annual training. In healthcare settings with power dynamics between providers and staff, regular training is especially important.</p>
-      <p><strong>Fix:</strong> Implement annual harassment prevention training for all employees. Online training platforms offer affordable options ($15-30/employee). Document completion dates.</p>
-      <p><strong>Effort:</strong> ⏱️ 1-2 hours annually per employee</p>
-    </div>
-  </div>
-
-  <div class="issue-card attention">
-    <div class="issue-header">
-      <span class="issue-title">Exit Interview Process</span>
-      <span class="badge attention">ATTENTION</span>
-    </div>
-    <div class="issue-answer">"Sometimes, inconsistently"</div>
-    <div class="issue-content">
-      <p><strong>Risk:</strong> Inconsistent exit interviews mean you may miss warning signs of workplace issues and lack documentation of voluntary departures. In unemployment claims or wrongful termination suits, exit interview notes can be valuable evidence.</p>
-      <p><strong>Fix:</strong> Create a standard exit interview form. Schedule exit interviews for all departing employees, even brief ones. Document voluntary resignation statements in writing.</p>
-      <p><strong>Effort:</strong> ⏱️ 30 minutes per departing employee</p>
-    </div>
-  </div>
-
-  <div class="issue-card attention">
-    <div class="issue-header">
-      <span class="issue-title">Meal and Rest Break Policy</span>
-      <span class="badge attention">ATTENTION</span>
-    </div>
-    <div class="issue-answer">"Informal break expectations"</div>
-    <div class="issue-content">
-      <p><strong>Risk:</strong> Many states require specific meal and rest breaks. In healthcare, patient care demands can lead to missed or interrupted breaks—which must still be compensated. Without clear policies, employees may have valid wage claims.</p>
-      <p><strong>Fix:</strong> Research your state's break requirements. Create written policy specifying break times and procedures for patient care interruptions. Ensure time records capture actual breaks taken.</p>
-      <p><strong>Effort:</strong> ⏱️ 2-3 hours to research and document policy</p>
-    </div>
-  </div>
-
-  <div class="issue-card attention">
-    <div class="issue-header">
-      <span class="issue-title">Retaliation Awareness</span>
-      <span class="badge attention">ATTENTION</span>
-    </div>
-    <div class="issue-answer">"Generally understood"</div>
-    <div class="issue-content">
-      <p><strong>Risk:</strong> Retaliation is the #1 EEOC charge category. "Generally understood" isn't enough—managers need specific training on what constitutes retaliation, including subtle actions that may seem legitimate but appear retaliatory in context.</p>
-      <p><strong>Fix:</strong> Include specific retaliation training in manager development. Document that managers understand they cannot take adverse action against employees who file complaints, even if discipline would otherwise be warranted.</p>
-      <p><strong>Effort:</strong> ⏱️ 1-2 hours of focused manager training</p>
-    </div>
-  </div>
-
-  <div class="issue-card attention">
-    <div class="issue-header">
-      <span class="issue-title">Employment Poster Compliance</span>
-      <span class="badge attention">ATTENTION</span>
-    </div>
-    <div class="issue-answer">"Yes, but may be outdated"</div>
-    <div class="issue-content">
-      <p><strong>Risk:</strong> Federal and state posting requirements change annually. Outdated posters can result in fines ranging from $100 to $35,000 depending on the violation. DOL inspectors often check poster compliance during any workplace visit.</p>
-      <p><strong>Fix:</strong> Order current year federal and state poster sets. Many payroll providers include poster compliance services. Post in break room or other area accessible to all employees.</p>
-      <p><strong>Effort:</strong> ⏱️ 30 minutes to order and post; $30-75 for compliant poster set</p>
-    </div>
-  </div>
-
-  <div class="good-section">
-    <h3>✅ What You're Doing Well</h3>
-    <div class="good-grid">
-      <div class="good-item"><span class="check">✓</span>Job applications reviewed for compliance</div>
-      <div class="good-item"><span class="check">✓</span>I-9s completed within 3 days</div>
-      <div class="good-item"><span class="check">✓</span>FCRA-compliant background check process</div>
-      <div class="good-item"><span class="check">✓</span>Written offer letters with at-will language</div>
-      <div class="good-item"><span class="check">✓</span>Anti-harassment policy with multiple channels</div>
-      <div class="good-item"><span class="check">✓</span>Handbook acknowledgments collected and filed</div>
-      <div class="good-item"><span class="check">✓</span>Formal exempt/non-exempt classification review</div>
-      <div class="good-item"><span class="check">✓</span>Digital time tracking system in place</div>
-      <div class="good-item"><span class="check">✓</span>Overtime calculated correctly at 1.5x</div>
-      <div class="good-item"><span class="check">✓</span>Final paychecks follow state timing rules</div>
-      <div class="good-item"><span class="check">✓</span>Organized personnel files maintained</div>
-      <div class="good-item"><span class="check">✓</span>Record retention schedules followed</div>
-      <div class="good-item"><span class="check">✓</span>Documented termination process</div>
-      <div class="good-item"><span class="check">✓</span>COBRA notices handled by insurance carrier</div>
-      <div class="good-item"><span class="check">✓</span>Workers' comp insurance current</div>
-      <div class="good-item"><span class="check">✓</span>Clear at-will statement in handbook</div>
-      <div class="good-item"><span class="check">✓</span>Access removed promptly when employees leave</div>
-    </div>
-  </div>
-
-  <div class="action-plan">
-    <h2>🎯 Your 30-Day Action Plan</h2>
-    <div class="action-week">
-      <h3>⚡ Week 1: Quick Wins</h3>
-      <ul>
-        <li>Create separate I-9 storage folder/binder (2 hours)</li>
-        <li>Move all existing I-9s to new location (1-2 hours)</li>
-        <li>Order current year employment posters ($30-75)</li>
-        <li>Create simple written warning template (1 hour)</li>
-      </ul>
-    </div>
-    <div class="action-week">
-      <h3>🔧 Weeks 2-4: Core Improvements</h3>
-      <ul>
-        <li>Schedule handbook review with employment attorney or HR consultant</li>
-        <li>Create standard exit interview form and process</li>
-        <li>Research and document state-specific break requirements</li>
-        <li>Implement break tracking in time system if needed</li>
-        <li>Select annual harassment training provider</li>
-        <li>Schedule manager training on retaliation awareness</li>
-      </ul>
-    </div>
-    <div class="action-week">
-      <h3>🔄 Ongoing</h3>
-      <ul>
-        <li>Document all performance conversations in writing</li>
-        <li>Conduct exit interviews for all departing employees</li>
-        <li>Complete annual harassment training for all staff</li>
-        <li>Review and update posters annually (set calendar reminder)</li>
-        <li>Annual handbook review and update</li>
-        <li>Quarterly I-9 audit for compliance</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="share-box">
-    <h3>📤 Who to Share This Report With</h3>
-    <div class="share-list">
-      <div class="share-item"><strong>Employment Attorney</strong> for handbook & policy review</div>
-      <div class="share-item"><strong>Insurance Agent</strong> for EPLI coverage review</div>
-      <div class="share-item"><strong>Accountant/CPA</strong> for classification & wage questions</div>
-      <div class="share-item"><strong>Office Manager</strong> for day-to-day implementation</div>
-    </div>
-  </div>
-
-  <div class="consult-box">
-    <h3 style="color:#2563EB;margin-bottom:8px;font-size:14pt;">Need Help Implementing These Recommendations?</h3>
-    <p style="margin:0 0 10px;color:#555;font-size:11pt;">TechShield KC can assist with consultations and HR compliance support.</p>
-    <p style="margin:0;"><a href="https://www.techshieldkc.com" style="color:#2563EB;text-decoration:none;font-size:14pt;font-weight:600;">www.techshieldkc.com</a></p>
-    <p style="margin:5px 0 0;color:#555;font-size:11pt;"><a href="mailto:info@techshieldkc.com" style="color:#2563EB;">info@techshieldkc.com</a> | Kansas City, MO</p>
-  </div>
-
-  <div class="resources">
-    <h3>📚 Free Resources</h3>
-    <div class="res-grid">
-      <a href="https://dol.gov/agencies/whd">DOL Wage & Hour</a>
-      <a href="https://eeoc.gov/employers">EEOC Employers</a>
-      <a href="https://shrm.org">SHRM Resources</a>
-      <a href="https://uscis.gov/i-9">I-9 Central</a>
-    </div>
-  </div>
-
-  <div class="disclaimer">
-    <strong>Important:</strong> This HRShieldIQ™ assessment is educational guidance based on self-reported answers. It is not an HR audit, compliance certification, or legal advice. Consult with an employment attorney for legal questions specific to your situation.
-  </div>
-
-  <div class="footer">
-    <p><strong>TechShield KC LLC</strong></p>
-    <p>hrshieldiq.com | <a href="mailto:info@techshieldkc.com" style="color:#888;">info@techshieldkc.com</a></p>
-    <p style="margin-top:8px;">© 2026 HRShieldIQ™</p>
-  </div>
-</body>
-</html>
+<div class="footer">
+<p><strong>TechShield KC LLC</strong></p>
+<p>hrshieldiq.com | <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="422b2c242d023627212a312a2b272e2629216c212d2f">[e
