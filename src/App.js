@@ -571,7 +571,7 @@ Return this JSON:
   "goodCount": [count - must total 25],
   "executiveSummary": "[2-3 sentences max, industry-specific]",
   "priorities": [{"title": "[action]", "reason": "[1 sentence why + penalty]"}, ...3 items],
-  "criticalIssues": [{"topic": "[area]", "answer": "[their answer]", "risk": "[1 sentence consequence]", "fix": "[1 sentence solution]", "effort": "[time estimate]"}],
+  "criticalIssues": [{"topic": "[area]", "answer": "[their answer]", "risk": "[1 sentence consequence]", "penalty": "$X,XXX - $XX,XXX", "penaltyNote": "[brief context]", "fix": "[1 sentence solution]", "effort": "[time estimate]", "effortNote": "[cost if any]"}],
   "attentionIssues": [{"topic": "[area]", "answer": "[answer]", "risk": "[1 sentence]", "fix": "[1 sentence]", "effort": "[time]"}],
   "goodPractices": ["[short phrase - what they're doing well]"],
   "actionPlan": {"week1": ["[brief task]"], "week2to4": ["[brief task]"], "ongoing": ["[brief task]"]}
