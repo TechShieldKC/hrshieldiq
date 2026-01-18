@@ -906,33 +906,102 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
           </section>
 
           {/* Sample Report */}
-          <section style={{ padding: '48px 24px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+          <section style={{ padding: '48px 24px', maxWidth: '650px', margin: '0 auto', textAlign: 'center' }}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', marginBottom: '24px' }}>Sample report preview</h2>
             <div style={{ backgroundColor: '#141414', borderRadius: '12px', padding: '24px', border: '1px solid #252525' }}>
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontSize: '2.5rem', fontWeight: 700, color: colors.primary }}>324<span style={{ fontSize: '1rem', color: '#666' }}>/500</span></div>
-                <span style={{ backgroundColor: 'rgba(37,99,235,0.2)', color: colors.primary, padding: '4px 12px', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 600 }}>MODERATE RISK</span>
+              
+              {/* Score + Comparison */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                <div style={{ backgroundColor: 'rgba(37,99,235,0.1)', border: `2px solid ${colors.primary}`, borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 700, color: colors.primary }}>324<span style={{ fontSize: '0.9rem', color: '#666' }}>/500</span></div>
+                  <span style={{ backgroundColor: colors.primary, color: '#fff', padding: '4px 12px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600 }}>MODERATE</span>
+                </div>
+                <div style={{ backgroundColor: '#1a1a1a', borderRadius: '10px', padding: '12px', textAlign: 'left', fontSize: '0.8rem' }}>
+                  <div style={{ color: '#888', marginBottom: '6px' }}>How You Compare</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#aaa', marginBottom: '4px' }}><span>Your Score</span><span style={{ color: '#fff', fontWeight: 600 }}>324</span></div>
+                  <div style={{ height: '6px', backgroundColor: '#333', borderRadius: '3px', marginBottom: '8px' }}><div style={{ height: '100%', width: '65%', backgroundColor: colors.primary, borderRadius: '3px' }}></div></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666', marginBottom: '4px' }}><span>Healthcare Avg</span><span>285</span></div>
+                  <div style={{ height: '6px', backgroundColor: '#333', borderRadius: '3px' }}><div style={{ height: '100%', width: '57%', backgroundColor: '#666', borderRadius: '3px' }}></div></div>
+                  <div style={{ color: '#27ae60', fontSize: '0.75rem', marginTop: '8px', textAlign: 'center' }}>✓ Above industry average!</div>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginBottom: '20px', fontSize: '1rem' }}>
-                <div style={{ textAlign: 'center' }}><div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e74c3c' }}>3</div><div style={{ color: '#666', fontSize: '0.85rem' }}>Critical</div></div>
-                <div style={{ textAlign: 'center' }}><div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f39c12' }}>5</div><div style={{ color: '#666', fontSize: '0.85rem' }}>Attention</div></div>
-                <div style={{ textAlign: 'center' }}><div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#27ae60' }}>17</div><div style={{ color: '#666', fontSize: '0.85rem' }}>Good</div></div>
+
+              {/* Category Scores */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '16px' }}>
+                {[
+                  { name: 'Hiring', score: 72, color: '#27ae60' },
+                  { name: 'Wage', score: 56, color: '#f39c12' },
+                  { name: 'Policies', score: 68, color: '#27ae60' },
+                  { name: 'Docs', score: 48, color: '#e74c3c' },
+                  { name: 'Terms', score: 80, color: '#27ae60' }
+                ].map((cat, i) => (
+                  <div key={i} style={{ backgroundColor: '#1a1a1a', borderRadius: '8px', padding: '10px 8px', textAlign: 'center', flex: 1 }}>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: cat.color }}>{cat.score}</div>
+                    <div style={{ fontSize: '0.65rem', color: '#555' }}>/100</div>
+                    <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '4px' }}>{cat.name}</div>
+                  </div>
+                ))}
               </div>
-              <div style={{ backgroundColor: '#1a1a1a', borderRadius: '8px', padding: '16px', marginBottom: '16px', textAlign: 'left' }}>
+
+              {/* Summary Stats */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginBottom: '16px' }}>
+                <div style={{ backgroundColor: 'rgba(231,76,60,0.15)', borderRadius: '8px', padding: '10px 20px', textAlign: 'center' }}><div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#e74c3c' }}>3</div><div style={{ color: '#888', fontSize: '0.75rem' }}>Critical</div></div>
+                <div style={{ backgroundColor: 'rgba(243,156,18,0.15)', borderRadius: '8px', padding: '10px 20px', textAlign: 'center' }}><div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#f39c12' }}>5</div><div style={{ color: '#888', fontSize: '0.75rem' }}>Attention</div></div>
+                <div style={{ backgroundColor: 'rgba(39,174,96,0.15)', borderRadius: '8px', padding: '10px 20px', textAlign: 'center' }}><div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#27ae60' }}>17</div><div style={{ color: '#888', fontSize: '0.75rem' }}>Good</div></div>
+              </div>
+
+              {/* Risk vs Investment */}
+              <div style={{ background: 'linear-gradient(135deg, rgba(231,76,60,0.1) 0%, rgba(231,76,60,0.2) 100%)', border: '1px solid #e74c3c', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e74c3c', marginBottom: '10px', textAlign: 'center' }}>💰 Risk vs. Investment</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ backgroundColor: '#fff', borderRadius: '6px', padding: '10px', textAlign: 'center', border: '1px solid #e74c3c' }}>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#e74c3c' }}>$50,000+</div>
+                    <div style={{ fontSize: '0.7rem', color: '#666' }}>Potential Exposure</div>
+                  </div>
+                  <div style={{ backgroundColor: '#fff', borderRadius: '6px', padding: '10px', textAlign: 'center', border: '1px solid #27ae60' }}>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#27ae60' }}>~$2,500</div>
+                    <div style={{ fontSize: '0.7rem', color: '#666' }}>Est. Cost to Fix</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Critical Issue Card */}
+              <div style={{ backgroundColor: '#1a1a1a', borderRadius: '8px', padding: '14px', marginBottom: '12px', textAlign: 'left', borderTop: '4px solid #e74c3c' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ color: '#e74c3c', fontWeight: 600, fontSize: '1rem' }}>🔴 I-9s Stored in Personnel Files</span>
-                  <span style={{ backgroundColor: '#e74c3c', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>CRITICAL</span>
+                  <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.95rem' }}>I-9 Storage Location</span>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <span style={{ backgroundColor: 'rgba(231,76,60,0.2)', color: '#e74c3c', padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 600 }}>CRITICAL</span>
+                    <span style={{ backgroundColor: 'rgba(37,99,235,0.2)', color: colors.primary, padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 600 }}>FIX FIRST</span>
+                  </div>
                 </div>
-                <p style={{ color: '#888', fontSize: '0.95rem', margin: 0 }}>Fix: Create separate I-9 folder. <span style={{ color: colors.primary }}>⏱️ 1-2 hours</span></p>
+                <div style={{ backgroundColor: '#252525', padding: '8px 10px', borderRadius: '6px', marginBottom: '10px', borderLeft: '3px solid #666' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#666', textTransform: 'uppercase', fontWeight: 600 }}>Your Answer</div>
+                  <div style={{ fontSize: '0.85rem', color: '#aaa', fontStyle: 'italic' }}>"In each employee's personnel file"</div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.75rem' }}>
+                  <div style={{ backgroundColor: 'rgba(231,76,60,0.1)', padding: '8px', borderRadius: '6px' }}>
+                    <div style={{ color: '#e74c3c', fontWeight: 600, marginBottom: '4px' }}>⚠️ Risk</div>
+                    <div style={{ color: '#888' }}>ICE audits require I-9s produced separately.</div>
+                  </div>
+                  <div style={{ backgroundColor: 'rgba(243,156,18,0.1)', padding: '8px', borderRadius: '6px' }}>
+                    <div style={{ color: '#f39c12', fontWeight: 600, marginBottom: '4px' }}>💰 Penalty</div>
+                    <div style={{ color: '#e74c3c', fontWeight: 700, fontSize: '0.9rem' }}>$252 - $2,507</div>
+                  </div>
+                </div>
               </div>
-              <div style={{ backgroundColor: '#1a1a1a', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
-                <p style={{ color: '#fff', fontWeight: 600, fontSize: '1rem', margin: '0 0 12px' }}>🎯 30-Day Action Plan</p>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  {['Separate I-9s', 'Update handbook', 'Review classifications'].map((item, i) => (
-                    <span key={i} style={{ backgroundColor: '#252525', color: '#888', padding: '6px 12px', borderRadius: '6px', fontSize: '0.9rem' }}>{item}</span>
+
+              {/* Action Plan Preview */}
+              <div style={{ backgroundColor: 'rgba(37,99,235,0.1)', borderRadius: '8px', padding: '14px', textAlign: 'left', border: `1px solid ${colors.primary}` }}>
+                <p style={{ color: '#fff', fontWeight: 600, fontSize: '0.9rem', margin: '0 0 10px', textAlign: 'center' }}>🎯 Your 30-Day Action Plan</p>
+                <div style={{ fontSize: '0.8rem' }}>
+                  {['Create separate I-9 storage folder', 'Order current year employment posters', 'Create written warning template'].map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: i < 2 ? '1px solid #252525' : 'none' }}>
+                      <div style={{ width: '14px', height: '14px', border: `2px solid ${colors.primary}`, borderRadius: '3px', flexShrink: 0 }}></div>
+                      <span style={{ color: '#aaa' }}>{item}</span>
+                    </div>
                   ))}
-                  <span style={{ color: colors.primary, fontSize: '0.9rem', padding: '6px' }}>+12 more</span>
                 </div>
+                <div style={{ textAlign: 'center', marginTop: '8px' }}><span style={{ color: colors.primary, fontSize: '0.8rem' }}>+12 more actions...</span></div>
               </div>
             </div>
             <a href="/sample-report.html" target="_blank" style={{ display: 'inline-block', color: colors.primary, marginTop: '20px', fontSize: '1rem', textDecoration: 'none' }}>View full sample →</a>
