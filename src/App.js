@@ -793,7 +793,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
                 <button onClick={() => setCurrentStep('report')} style={{ background: '#22c55e', border: 'none', borderRadius: '6px', padding: '10px 20px', color: '#000', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem', fontWeight: 600 }}>
                   View My Report
                 </button>
-                <button onClick={() => { localStorage.removeItem('hrshieldiq_report'); localStorage.removeItem('hrshieldiq_business'); setHasStoredReport(false); setReport(null); setBusinessInfo({ name: '', industry: '', size: '', email: '' }); setPaymentComplete(false); }} style={{ background: 'transparent', border: '1px solid #666', borderRadius: '6px', padding: '10px 20px', color: '#999', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem' }}>
+                <button onClick={() => { localStorage.removeItem('hrshieldiq_report'); localStorage.removeItem('hrshieldiq_business'); setHasStoredReport(false); setReport(null); setBusinessInfo({ name: '', industry: '', size: '', email: '' }); setPaymentComplete(false); setAppliedDiscount(0); setDiscountedPrice(29.99); setPromoCode(''); setPromoError(''); }} style={{ background: 'transparent', border: '1px solid #666', borderRadius: '6px', padding: '10px 20px', color: '#999', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem' }}>
                   Start Fresh
                 </button>
               </div>
@@ -2037,7 +2037,7 @@ ${goodHtml}
             <a href="mailto:info@techshieldkc.com?subject=HRShieldIQ%20Follow-up" style={{ color: colors.primary, fontSize: '0.85rem', textDecoration: 'none', fontWeight: 500 }}>Contact us →</a>
           </div>
           
-          <button onClick={() => { setCurrentStep('intro'); setCurrentCategory(0); setAnswers({}); setReport(null); setShowPaywall(false); setPaymentComplete(false); }} style={{ background: 'transparent', border: `1px solid ${colors.grayDark}`, borderRadius: '8px', padding: '0.75rem 1.25rem', color: colors.grayLight, cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.85rem' }}>
+          <button onClick={() => { setCurrentStep('intro'); setCurrentCategory(0); setAnswers({}); setReport(null); setShowPaywall(false); setPaymentComplete(false); setAppliedDiscount(0); setDiscountedPrice(29.99); setPromoCode(''); setPromoError(''); }} style={{ background: 'transparent', border: `1px solid ${colors.grayDark}`, borderRadius: '8px', padding: '0.75rem 1.25rem', color: colors.grayLight, cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.85rem' }}>
             Start New Assessment
           </button>
           
