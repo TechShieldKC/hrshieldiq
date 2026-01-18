@@ -587,16 +587,28 @@ For questions: info@techshieldkc.com
   const [reportGenerating, setReportGenerating] = useState(false);
   const [reportReady, setReportReady] = useState(false);
   const [pendingReport, setPendingReport] = useState(null);
+  
+  // Ref to store the generation promise so multiple callers can await it
+  const generationPromiseRef = useRef(null);
 
   const startBackgroundReportGeneration = async () => {
-    if (reportGenerating) return null;
+    // If already ready, return the cached report
     if (reportReady && pendingReport) return pendingReport;
+    
+    // If already generating, return the existing promise
+    if (generationPromiseRef.current) {
+      console.log('Generation already in progress, returning existing promise');
+      return generationPromiseRef.current;
+    }
+    
     console.log('Starting background report generation...');
     setReportGenerating(true);
     
-    try {
-      const { iqScore } = calculateRiskScore();
-      const prompt = `You are an HR compliance advisor. Analyze ALL 25 questions in this employment compliance assessment and return ONLY valid JSON.
+    // Create the generation promise
+    const doGeneration = async () => {
+      try {
+        const { iqScore } = calculateRiskScore();
+        const prompt = `You are an HR compliance advisor. Analyze ALL 25 questions in this employment compliance assessment and return ONLY valid JSON.
 
 BUSINESS: ${businessInfo.name}
 INDUSTRY: ${businessInfo.industry}
@@ -645,76 +657,83 @@ Return this JSON structure:
 
 CRITICAL: Return ONLY valid JSON, no markdown.`;
 
-      const response = await fetch('/api/generate-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) throw new Error(data.error || 'Failed to generate report');
-      
-      let reportData;
-      try {
-        const reportText = data.report || '';
-        const cleanJson = reportText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-        reportData = JSON.parse(cleanJson);
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        reportData = {
+        const response = await fetch('/api/generate-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) throw new Error(data.error || 'Failed to generate report');
+        
+        let reportData;
+        try {
+          const reportText = data.report || '';
+          const cleanJson = reportText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+          reportData = JSON.parse(cleanJson);
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          reportData = {
+            score: iqScore,
+            riskLevel: iqScore < 200 ? 'HIGH RISK' : iqScore < 300 ? 'ELEVATED RISK' : iqScore < 400 ? 'MODERATE' : 'STRONG',
+            criticalCount: 3,
+            attentionCount: 5,
+            goodCount: 17,
+            executiveSummary: 'Assessment completed. Review details below for specific recommendations.',
+            priorities: [
+              { title: 'Review I-9 compliance', reason: 'ICE fines range from $252-$2,507 per form' },
+              { title: 'Update employee handbook', reason: 'Outdated policies create liability exposure' },
+              { title: 'Document performance issues', reason: 'Verbal-only warnings are difficult to defend' }
+            ],
+            criticalIssues: [],
+            attentionIssues: [],
+            goodPractices: ['Assessment completed'],
+            actionPlan: { week1: ['Review findings'], week2to4: ['Implement fixes'], ongoing: ['Monitor compliance'] }
+          };
+        }
+        
+        console.log('Background report ready!');
+        setPendingReport(reportData);
+        setReportReady(true);
+        return reportData;
+        
+      } catch (error) {
+        console.error('Background report error:', error);
+        const { iqScore } = calculateRiskScore();
+        const fallbackReport = {
           score: iqScore,
           riskLevel: iqScore < 200 ? 'HIGH RISK' : iqScore < 300 ? 'ELEVATED RISK' : iqScore < 400 ? 'MODERATE' : 'STRONG',
           criticalCount: 3,
           attentionCount: 5,
           goodCount: 17,
-          executiveSummary: 'Assessment completed. Review details below for specific recommendations.',
+          executiveSummary: 'Assessment completed.',
           priorities: [
-            { title: 'Review I-9 compliance', reason: 'ICE fines range from $252-$2,507 per form' },
-            { title: 'Update employee handbook', reason: 'Outdated policies create liability exposure' },
-            { title: 'Document performance issues', reason: 'Verbal-only warnings are difficult to defend' }
+            { title: 'Review I-9 compliance', reason: 'ICE fines are significant' },
+            { title: 'Update handbook', reason: 'Employment law changes frequently' },
+            { title: 'Document performance', reason: 'Protects against wrongful termination claims' }
           ],
           criticalIssues: [],
           attentionIssues: [],
-          goodPractices: ['Assessment completed'],
-          actionPlan: { week1: ['Review findings'], week2to4: ['Implement fixes'], ongoing: ['Monitor compliance'] }
+          goodPractices: [],
+          actionPlan: { week1: ['Review report'], week2to4: ['Implement changes'], ongoing: ['Annual review'] }
         };
+        setPendingReport(fallbackReport);
+        setReportReady(true);
+        return fallbackReport;
+      } finally {
+        setReportGenerating(false);
+        generationPromiseRef.current = null;
       }
-      
-      console.log('Background report ready!');
-      setPendingReport(reportData);
-      setReportReady(true);
-      return reportData;
-      
-    } catch (error) {
-      console.error('Background report error:', error);
-      const { iqScore } = calculateRiskScore();
-      const fallbackReport = {
-        score: iqScore,
-        riskLevel: iqScore < 200 ? 'HIGH RISK' : iqScore < 300 ? 'ELEVATED RISK' : iqScore < 400 ? 'MODERATE' : 'STRONG',
-        criticalCount: 3,
-        attentionCount: 5,
-        goodCount: 17,
-        executiveSummary: 'Assessment completed.',
-        priorities: [
-          { title: 'Review I-9 compliance', reason: 'ICE fines are significant' },
-          { title: 'Update handbook', reason: 'Employment law changes frequently' },
-          { title: 'Document performance', reason: 'Protects against wrongful termination claims' }
-        ],
-        criticalIssues: [],
-        attentionIssues: [],
-        goodPractices: [],
-        actionPlan: { week1: ['Review report'], week2to4: ['Implement changes'], ongoing: ['Annual review'] }
-      };
-      setPendingReport(fallbackReport);
-      setReportReady(true);
-      return fallbackReport;
-    } finally {
-      setReportGenerating(false);
-    }
+    };
+    
+    // Store the promise and return it
+    generationPromiseRef.current = doGeneration();
+    return generationPromiseRef.current;
   };
 
   const generateReport = async () => {
+    // If report is already ready, use it immediately
     if (reportReady && pendingReport) {
       console.log('Using pre-generated report');
       setReport(pendingReport);
@@ -727,9 +746,19 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
     }
     
     setLoading(true);
-    const generatedReport = await startBackgroundReportGeneration();
     
-    // Use the returned report data directly (avoids closure issues with state)
+    let generatedReport;
+    
+    // If generation is in progress, wait for the existing promise
+    if (generationPromiseRef.current) {
+      console.log('Waiting for in-progress report generation...');
+      generatedReport = await generationPromiseRef.current;
+    } else {
+      // Start fresh generation
+      generatedReport = await startBackgroundReportGeneration();
+    }
+    
+    // Use the returned report data
     if (generatedReport) {
       console.log('Report generated, transitioning to report screen');
       setReport(generatedReport);
@@ -738,15 +767,9 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
       if (businessInfo.email) {
         sendReportEmail(businessInfo.email, generatedReport);
       }
-    } else if (pendingReport) {
-      // If startBackgroundReportGeneration returned null but pendingReport exists, use it
-      console.log('Using existing pending report');
-      setReport(pendingReport);
-      setCurrentStep('report');
+    } else {
+      console.error('Failed to generate report');
       setLoading(false);
-      if (businessInfo.email) {
-        sendReportEmail(businessInfo.email, pendingReport);
-      }
     }
   };
 
@@ -1228,8 +1251,8 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
     );
   }
 
-  // PREVIEW SCREEN
-  if (currentStep === 'preview') {
+  // PREVIEW SCREEN (only show if not loading)
+  if (currentStep === 'preview' && !loading) {
     const { highRisk, mediumRisk, lowRisk, iqScore } = calculateRiskScore();
     const displayData = pendingReport ? { critical: pendingReport.criticalCount || highRisk, attention: pendingReport.attentionCount || mediumRisk, good: pendingReport.goodCount || lowRisk } : { critical: highRisk, attention: mediumRisk, good: lowRisk };
 
@@ -1365,7 +1388,50 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
               {/* Promo Code */}
               <div style={{ marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); }} placeholder="Promo code (optional)" style={{ flex: 1, padding: '0.6rem 0.75rem', borderRadius: '6px', border: `1px solid ${colors.grayDark}`, background: colors.darkCard, color: colors.white, fontFamily: 'inherit', fontSize: '0.85rem' }} />
+                  <input 
+                    type="text" 
+                    value={promoCode} 
+                    onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); }} 
+                    onKeyDown={async (e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (!businessInfo.email || !businessInfo.email.includes('@')) { setPromoError('Enter email first'); return; }
+                        if (!promoCode.trim()) { return; }
+                        try {
+                          const response = await fetch('/api/validate-promo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: promoCode }) });
+                          const data = await response.json();
+                          if (data.valid) {
+                            setAppliedDiscount(data.discount);
+                            setDiscountedPrice(data.finalPrice);
+                            if (data.discount === 100) {
+                              setPromoError('');
+                              setPaymentComplete(true);
+                              setShowPaywall(false);
+                              setLoading(true);
+                              const generatedReport = await startBackgroundReportGeneration();
+                              if (generatedReport) {
+                                setReport(generatedReport);
+                                setCurrentStep('report');
+                                setLoading(false);
+                                if (businessInfo.email) {
+                                  sendReportEmail(businessInfo.email, generatedReport);
+                                }
+                              }
+                            } else {
+                              setPromoError(`✓ ${data.discount}% off! Pay $${data.finalPrice.toFixed(2)}`);
+                            }
+                          } else {
+                            setPromoError('Invalid code');
+                          }
+                        } catch (error) {
+                          console.error('Promo code error:', error);
+                          setPromoError('Error validating code');
+                        }
+                      }
+                    }}
+                    placeholder="Promo code (optional)" 
+                    style={{ flex: 1, padding: '0.6rem 0.75rem', borderRadius: '6px', border: `1px solid ${colors.grayDark}`, background: colors.darkCard, color: colors.white, fontFamily: 'inherit', fontSize: '0.85rem' }} 
+                  />
                   <button onClick={async () => {
                     if (!businessInfo.email || !businessInfo.email.includes('@')) { setPromoError('Enter email first'); return; }
                     if (!promoCode.trim()) { return; }
