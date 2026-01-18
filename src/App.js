@@ -1792,6 +1792,7 @@ h3{font-family:Inter,sans-serif;color:#333;font-size:13pt;margin:20px 0 10px;}
   .resources{padding:15px;}
   .res-grid{grid-template-columns:1fr 1fr;gap:8px;}
   .res-grid a{padding:10px;font-size:9pt;}
+  .resources-grid{grid-template-columns:1fr !important;gap:12px !important;}
   .disclaimer{padding:10px;font-size:8pt;}
   .footer{margin-top:20px;padding-top:15px;font-size:8pt;}
 }
@@ -1974,13 +1975,35 @@ ${goodHtml}
 </div>
 
 <!-- Resources -->
-<div class="resources">
-  <h3>📚 Helpful Resources</h3>
-  <div class="res-grid">
-    <a href="https://dol.gov/agencies/whd">Dept. of Labor (DOL)</a>
-    <a href="https://eeoc.gov/employers">EEOC Employers</a>
-    <a href="https://shrm.org">SHRM (HR Professionals)</a>
-    <a href="https://uscis.gov/i-9">Form I-9 Central</a>
+<div style="background:#eff6ff;border-radius:12px;padding:25px;margin:25px 0;">
+  <h3 style="font-family:Inter,sans-serif;color:#2563EB;text-align:center;margin:0 0 8px;font-size:14pt;">📚 Free Resources</h3>
+  <p style="text-align:center;color:#64748b;font-size:10pt;margin:0 0 20px;">Trusted government and nonprofit resources for small business HR compliance:</p>
+  
+  <div class="resources-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div style="background:white;border-radius:10px;padding:18px;border:1px solid #e2e8f0;">
+      <a href="https://www.dol.gov/agencies/whd" style="color:#2563EB;font-weight:600;font-size:11pt;text-decoration:none;font-family:Inter,sans-serif;">DOL Wage & Hour Division</a>
+      <p style="color:#475569;font-size:9.5pt;margin:8px 0 0;line-height:1.6;">Department of Labor — federal wage laws, overtime rules, minimum wage requirements, and employer compliance assistance.</p>
+    </div>
+    <div style="background:white;border-radius:10px;padding:18px;border:1px solid #e2e8f0;">
+      <a href="https://www.eeoc.gov/employers" style="color:#2563EB;font-weight:600;font-size:11pt;text-decoration:none;font-family:Inter,sans-serif;">EEOC Employer Resources</a>
+      <p style="color:#475569;font-size:9.5pt;margin:8px 0 0;line-height:1.6;">Equal Employment Opportunity Commission — anti-discrimination laws, harassment prevention, and required workplace posters.</p>
+    </div>
+    <div style="background:white;border-radius:10px;padding:18px;border:1px solid #e2e8f0;">
+      <a href="https://www.osha.gov/employers" style="color:#2563EB;font-weight:600;font-size:11pt;text-decoration:none;font-family:Inter,sans-serif;">OSHA Employer Resources</a>
+      <p style="color:#475569;font-size:9.5pt;margin:8px 0 0;line-height:1.6;">Occupational Safety & Health Administration — workplace safety requirements, injury reporting, and free consultation programs.</p>
+    </div>
+    <div style="background:white;border-radius:10px;padding:18px;border:1px solid #e2e8f0;">
+      <a href="https://www.uscis.gov/i-9" style="color:#2563EB;font-weight:600;font-size:11pt;text-decoration:none;font-family:Inter,sans-serif;">USCIS I-9 Central</a>
+      <p style="color:#475569;font-size:9.5pt;margin:8px 0 0;line-height:1.6;">U.S. Citizenship & Immigration Services — Form I-9 instructions, acceptable documents list, and E-Verify information.</p>
+    </div>
+    <div style="background:white;border-radius:10px;padding:18px;border:1px solid #e2e8f0;">
+      <a href="https://www.irs.gov/businesses/small-businesses-self-employed/independent-contractor-self-employed-or-employee" style="color:#2563EB;font-weight:600;font-size:11pt;text-decoration:none;font-family:Inter,sans-serif;">IRS Worker Classification</a>
+      <p style="color:#475569;font-size:9.5pt;margin:8px 0 0;line-height:1.6;">Internal Revenue Service — employee vs. contractor rules, Form SS-8 determinations, and payroll tax requirements.</p>
+    </div>
+    <div style="background:white;border-radius:10px;padding:18px;border:1px solid #e2e8f0;">
+      <a href="https://www.shrm.org/topics-tools" style="color:#2563EB;font-weight:600;font-size:11pt;text-decoration:none;font-family:Inter,sans-serif;">SHRM HR Toolkit</a>
+      <p style="color:#475569;font-size:9.5pt;margin:8px 0 0;line-height:1.6;">Society for Human Resource Management — HR templates, policy samples, and best practices from the leading HR professional organization.</p>
+    </div>
   </div>
 </div>
 
