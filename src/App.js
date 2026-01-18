@@ -885,7 +885,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
                 {[
                   { icon: '🎯', title: 'Find Gaps', items: 'Hiring, handbook, wage & hour, docs' },
                   { icon: '📊', title: 'Understand Risk', items: 'Plain English, penalty amounts' },
-                  { icon: '✅', title: 'Action Plan', items: '30-day roadmap, time estimates' },
+                  { icon: '✅', title: 'Action Plan', items: '30-day roadmap, effort guidance' },
                   { icon: '🔗', title: 'Resources', items: 'DOL, EEOC, SHRM guides' }
                 ].map((card, i) => (
                   <div key={i} style={{ backgroundColor: '#1a1a1a', borderRadius: '10px', padding: '20px', border: '1px solid #252525', textAlign: 'center' }}>
@@ -1251,7 +1251,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
               <div><span style={{ color: colors.primary }}>✓</span> Your exact HRShieldIQ™ score</div>
               <div><span style={{ color: colors.primary }}>✓</span> Detailed analysis of all 25 compliance areas</div>
               <div><span style={{ color: colors.primary }}>✓</span> Specific risks for {businessInfo.industry || 'your'} organizations</div>
-              <div><span style={{ color: colors.primary }}>✓</span> Step-by-step fix instructions with time estimates</div>
+              <div><span style={{ color: colors.primary }}>✓</span> Recommended actions with effort guidance</div>
               <div><span style={{ color: colors.primary }}>✓</span> 30-day action plan prioritized by impact</div>
               <div><span style={{ color: colors.primary }}>✓</span> PDF download for your records</div>
             </div>
