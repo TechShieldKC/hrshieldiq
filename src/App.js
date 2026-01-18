@@ -39,6 +39,23 @@ const HRShieldIQ = () => {
         localStorage.removeItem('hrshieldiq_business');
       }
     }
+    
+    // Initialize EmailJS
+    if (typeof window.emailjs !== 'undefined') {
+      window.emailjs.init('oviQBhcc3fq0dRlnK');
+      window.emailjsInitialized = true;
+      console.log('EmailJS initialized');
+    } else {
+      // Load EmailJS script dynamically if not present
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+      script.onload = () => {
+        window.emailjs.init('oviQBhcc3fq0dRlnK');
+        window.emailjsInitialized = true;
+        console.log('EmailJS loaded and initialized');
+      };
+      document.head.appendChild(script);
+    }
   }, []);
 
   // Auto-prompt print dialog when report loads (first time only)
@@ -442,10 +459,24 @@ const HRShieldIQ = () => {
       return;
     }
     try {
+      // Wait for EmailJS to be available (with timeout)
+      let attempts = 0;
+      while (typeof window.emailjs === 'undefined' && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        attempts++;
+      }
+      
       if (typeof window.emailjs === 'undefined') {
-        console.log('EmailJS not loaded - skipping email send');
+        console.log('EmailJS not loaded after waiting - skipping email send');
         return;
       }
+      
+      // Ensure EmailJS is initialized
+      if (!window.emailjsInitialized) {
+        window.emailjs.init('oviQBhcc3fq0dRlnK');
+        window.emailjsInitialized = true;
+      }
+      
       console.log('EmailJS is loaded, preparing to send...');
       const r = reportData || {};
       const { iqScore } = calculateRiskScore();
@@ -550,7 +581,7 @@ For questions: info@techshieldkc.com
       };
 
       console.log('Sending email to:', emailAddress);
-      const result = await window.emailjs.send('service_hrshieldiq', 'template_report', templateParams);
+      const result = await window.emailjs.send('service_9hdzso6', 'template_e7m1f2h', templateParams);
       console.log('Email sent successfully:', result);
     } catch (error) {
       console.error('Failed to send report email:', error);
@@ -2049,12 +2080,31 @@ ${goodHtml}
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.5rem', color: colors.white }}>Your Report is Ready!</h1>
           <p style={{ color: colors.grayLight, fontSize: '1rem', marginBottom: '0.5rem' }}>{businessInfo.name}</p>
 
-          {report && report.score && (
+          {report && typeof report.score === 'number' && (
             <div style={{ background: colors.darkCard, borderRadius: '12px', padding: '1.5rem', margin: '1.5rem 0' }}>
               <div style={{ fontSize: '3rem', fontWeight: 700, color: colors.primary }}>{report.score}</div>
               <div style={{ color: colors.gray, fontSize: '0.9rem' }}>out of 500</div>
-              <div style={{ display: 'inline-block', background: report.riskLevel === 'HIGH RISK' ? '#dc2626' : report.riskLevel === 'ELEVATED RISK' ? '#f59e0b' : report.riskLevel === 'MODERATE' ? '#3b82f6' : '#10b981', color: 'white', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, marginTop: '0.75rem' }}>{report.riskLevel}</div>
+              <p style={{ color: colors.gray, fontSize: '0.75rem', margin: '0.5rem 0' }}>Typical small organizations score between 250–350</p>
+              <div style={{ display: 'inline-block', background: report.riskLevel === 'HIGH RISK' ? '#dc2626' : report.riskLevel === 'ELEVATED RISK' ? '#f59e0b' : report.riskLevel === 'MODERATE' ? '#3b82f6' : '#10b981', color: 'white', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, marginTop: '0.5rem' }}>{report.riskLevel}{report.riskLevel === 'HIGH RISK' ? ' — immediate attention recommended' : ''}</div>
               <div style={{ color: colors.gray, fontSize: '0.75rem', marginTop: '1rem', paddingTop: '0.75rem', borderTop: `1px solid ${colors.grayDark}33` }}>25 questions × 20 points = 500 max. Higher is better.</div>
+            </div>
+          )}
+          
+          {/* Summary Stats */}
+          {report && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+              <div style={{ background: '#fee2e2', borderRadius: '10px', padding: '1rem 1.5rem', textAlign: 'center', minWidth: '100px' }}>
+                <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#dc2626' }}>{report.criticalCount || 0}</div>
+                <div style={{ fontSize: '0.75rem', color: '#991b1b' }}>Critical Issues</div>
+              </div>
+              <div style={{ background: '#fef3c7', borderRadius: '10px', padding: '1rem 1.5rem', textAlign: 'center', minWidth: '100px' }}>
+                <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f59e0b' }}>{report.attentionCount || 0}</div>
+                <div style={{ fontSize: '0.75rem', color: '#92400e' }}>Needs Attention</div>
+              </div>
+              <div style={{ background: '#d1fae5', borderRadius: '10px', padding: '1rem 1.5rem', textAlign: 'center', minWidth: '100px' }}>
+                <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#10b981' }}>{report.goodCount || 0}</div>
+                <div style={{ fontSize: '0.75rem', color: '#065f46' }}>Good Practices</div>
+              </div>
             </div>
           )}
           
