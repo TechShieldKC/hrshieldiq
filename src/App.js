@@ -341,7 +341,7 @@ const HRShieldIQ = () => {
         { 
           id: 'final_paycheck', 
           text: 'When an employee leaves, when do they receive their final paycheck?', 
-          helper: 'State laws vary dramatically—some require immediate payment upon termination, others allow until next regular payday. Violations incur penalties.',
+          helper: 'State laws vary dramatically: some require immediate payment upon termination, others allow until the next regular payday. Violations incur penalties.',
           options: ['We follow state-specific timing', 'Next regular payday', 'Within 2 weeks', 'Not sure of requirements'] 
         }
       ]
@@ -1118,7 +1118,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
           <div style={{ background: colors.darkCard, border: `1px solid ${colors.grayDark}22`, borderRadius: '8px', padding: '0.875rem 1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
             <span style={{ fontSize: '1rem', flexShrink: 0 }}>💡</span>
             <p style={{ fontSize: '0.85rem', color: colors.gray, lineHeight: 1.5, margin: 0 }}>
-              <strong style={{ color: colors.grayLight }}>Answer as best you can.</strong> If you're unsure, select "Not sure" — we'll flag it as an area to investigate.
+              <strong style={{ color: colors.grayLight }}>Answer as best you can.</strong> If you're unsure, select "Not sure" and we'll flag it as an area to investigate.
             </p>
           </div>
           
@@ -1457,17 +1457,17 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
         'Healthcare / Medical': { avg: 285, stat: 'Healthcare employers face 30% more wage & hour lawsuits than other industries.', source: 'DOL Wage & Hour Division Enforcement Data', exposure: '$50,000+' },
         'Religious Organization': { avg: 275, stat: 'Religious organizations face unique compliance challenges with ministerial exceptions and volunteer classification.', source: 'EEOC Religious Discrimination Guidance', exposure: '$35,000+' },
         'Daycare / Childcare': { avg: 280, stat: 'Childcare facilities face strict background check and ratio requirements with penalties up to $10,000 per violation.', source: 'State Childcare Licensing Boards', exposure: '$40,000+' },
-        'Hospitality / Restaurant': { avg: 265, stat: 'Restaurants pay $1.9 billion annually in wage & hour settlements—tip credit and overtime are top violations.', source: 'DOL Wage & Hour Division', exposure: '$45,000+' },
+        'Hospitality / Restaurant': { avg: 265, stat: 'Restaurants pay $1.9 billion annually in wage and hour settlements. Tip credit and overtime are the top violations.', source: 'DOL Wage & Hour Division', exposure: '$45,000+' },
         'Retail / E-commerce': { avg: 270, stat: 'Retail faces high turnover and scheduling compliance issues with predictive scheduling laws in many states.', source: 'National Retail Federation', exposure: '$35,000+' },
         'Construction / Trades': { avg: 270, stat: 'Construction employers face 40% higher OSHA inspection rates and Davis-Bacon Act scrutiny on federal projects.', source: 'OSHA Enforcement Data', exposure: '$55,000+' },
         'Professional Services': { avg: 305, stat: 'Professional services firms face increased DOL audits for exempt employee misclassification.', source: 'DOL Wage & Hour Division', exposure: '$40,000+' },
         'Manufacturing': { avg: 290, stat: 'Manufacturing sees 25% of all OSHA violations with average penalties of $15,000 per serious violation.', source: 'OSHA Statistics', exposure: '$60,000+' },
-        'Nonprofit / Association': { avg: 295, stat: 'Nonprofits face unique risks with volunteer vs. employee classification—misclassification penalties start at $50 per worker.', source: 'Internal Revenue Service (IRS) & DOL Guidelines', exposure: '$30,000+' },
-        'Education / School': { avg: 280, stat: '58.3% of K-12 DOL investigations find FLSA violations—one district faced $1.5M+ in back wages from a single audit.', source: 'DOL Wage & Hour Division', exposure: '$45,000+' },
-        'Funeral Home / Mortuary': { avg: 285, stat: 'Funeral home OSHA fines can reach $161,323 for serious violations—bloodborne pathogen and formaldehyde exposure are common citations.', source: 'OSHA / National Funeral Directors Association (NFDA)', exposure: '$50,000+' },
+        'Nonprofit / Association': { avg: 295, stat: 'Nonprofits face unique risks with volunteer vs. employee classification. Penalties start at $50 per misclassified worker.', source: 'Internal Revenue Service (IRS) & DOL Guidelines', exposure: '$30,000+' },
+        'Education / School': { avg: 280, stat: '58.3% of K-12 DOL investigations find FLSA violations. One district faced over $1.5M in back wages from a single audit.', source: 'DOL Wage & Hour Division', exposure: '$45,000+' },
+        'Funeral Home / Mortuary': { avg: 285, stat: 'Funeral home OSHA fines can reach $161,323 for serious violations. Bloodborne pathogen and formaldehyde exposure are common citations.', source: 'OSHA / National Funeral Directors Association (NFDA)', exposure: '$50,000+' },
         'Financial Services': { avg: 300, stat: 'Financial services face heightened scrutiny for overtime exemption misclassification of analysts and advisors.', source: 'DOL Wage & Hour Division', exposure: '$45,000+' },
-        'Real Estate': { avg: 290, stat: 'Real estate faces significant misclassification risk—agent/employee status lawsuits have increased dramatically in recent years.', source: 'DOL & State Real Estate Commissions', exposure: '$40,000+' },
-        'Technology / IT': { avg: 295, stat: 'Up to 30% of tech employers misclassify workers as contractors—startups face high exposure for back wages and benefits.', source: 'DOL Misclassification Initiative', exposure: '$50,000+' },
+        'Real Estate': { avg: 290, stat: 'Real estate faces significant misclassification risk. Agent vs. employee status lawsuits have increased dramatically in recent years.', source: 'DOL & State Real Estate Commissions', exposure: '$40,000+' },
+        'Technology / IT': { avg: 295, stat: 'Up to 30% of tech employers misclassify workers as contractors. Startups face high exposure for back wages and benefits.', source: 'DOL Misclassification Initiative', exposure: '$50,000+' },
         'Other': { avg: 285, stat: 'Small businesses face an average of $125,000 in legal costs per employment lawsuit.', source: 'Hiscox Employment Practices Liability Report', exposure: '$45,000+' }
       };
       const indData = industryData[businessInfo.industry] || industryData['Other'];
@@ -1920,7 +1920,7 @@ ${goodHtml}
 <div class="next-steps">
   <h3>📅 Reassess Your Compliance</h3>
   <p style="font-size:10pt;color:#6b21a8;">After implementing these changes, reassess in:</p>
-  <div class="next-date">90 Days — ${reassessDate}</div>
+  <div class="next-date">90 Days: ${reassessDate}</div>
   <p style="font-size:9pt;color:#7c3aed;">Goal: ${score < 300 ? 'Move from HIGH RISK → MODERATE (300+ points)' : score < 400 ? 'Move from MODERATE → STRONG (400+ points)' : 'Maintain STRONG compliance practices'}</p>
 </div>
 
@@ -2004,7 +2004,7 @@ ${goodHtml}
               <div style={{ fontSize: '3rem', fontWeight: 700, color: colors.primary }}>{report.score}</div>
               <div style={{ color: colors.gray, fontSize: '0.9rem' }}>out of 500</div>
               <p style={{ color: colors.gray, fontSize: '0.75rem', margin: '0.5rem 0' }}>Typical small organizations score between 250–350</p>
-              <div style={{ display: 'inline-block', background: report.riskLevel === 'HIGH RISK' ? '#dc2626' : report.riskLevel === 'ELEVATED RISK' ? '#f59e0b' : report.riskLevel === 'MODERATE' ? '#3b82f6' : '#10b981', color: 'white', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, marginTop: '0.5rem' }}>{report.riskLevel}{report.riskLevel === 'HIGH RISK' ? ' — immediate attention recommended' : ''}</div>
+              <div style={{ display: 'inline-block', background: report.riskLevel === 'HIGH RISK' ? '#dc2626' : report.riskLevel === 'ELEVATED RISK' ? '#f59e0b' : report.riskLevel === 'MODERATE' ? '#3b82f6' : '#10b981', color: 'white', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, marginTop: '0.5rem' }}>{report.riskLevel}{report.riskLevel === 'HIGH RISK' ? ' (immediate attention recommended)' : ''}</div>
               <div style={{ color: colors.gray, fontSize: '0.75rem', marginTop: '1rem', paddingTop: '0.75rem', borderTop: `1px solid ${colors.grayDark}33` }}>25 questions × 20 points = 500 max. Higher is better.</div>
             </div>
           )}
