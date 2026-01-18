@@ -16,7 +16,6 @@ const HRShieldIQ = () => {
   const [discountedPrice, setDiscountedPrice] = useState(29.99);
   const [activeTab, setActiveTab] = useState('business');
   const [reportSaved, setReportSaved] = useState(false);
-  const [showSaveReminder, setShowSaveReminder] = useState(false);
   const paypalRef = useRef(null);
   const [hasStoredReport, setHasStoredReport] = useState(false);
   const [printPrompted, setPrintPrompted] = useState(false);
@@ -106,33 +105,6 @@ const HRShieldIQ = () => {
       .replace(/'/g, '&#039;');
   };
 
-  // Simple markdown to HTML converter
-  const markdownToHtml = (markdown) => {
-    if (!markdown) return '';
-    let html = markdown
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/^### (.*$)/gm, '<h3 style="color: #ffffff; font-size: 1.1rem; margin: 1.5rem 0 0.75rem; font-weight: 600;">$1</h3>')
-      .replace(/^## (.*$)/gm, '<h2 style="color: #2563EB; font-size: 1.3rem; margin: 2rem 0 1rem; font-weight: 700; border-bottom: 1px solid #333; padding-bottom: 0.5rem;">$1</h2>')
-      .replace(/^# (.*$)/gm, '<h1 style="color: #ffffff; font-size: 2rem; margin: 1rem 0; font-weight: 700;">$1</h1>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong style="color: #ffffff;">$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/^---$/gm, '<hr style="border: none; border-top: 1px solid #333; margin: 1.5rem 0;">')
-      .replace(/^- (.*$)/gm, '<li style="margin: 0.5rem 0; margin-left: 1.5rem;">$1</li>')
-      .replace(/\|:?-+:?\|/g, '')
-      .replace(/^\|(.*)\|$/gm, (match, content) => {
-        const cells = content.split('|').map(cell => cell.trim());
-        return '<tr>' + cells.map(cell => `<td style="padding: 0.5rem; border: 1px solid #333;">${cell}</td>`).join('') + '</tr>';
-      })
-      .replace(/\n\n/g, '</p><p style="margin: 1rem 0; line-height: 1.7;">')
-      .replace(/\n/g, '<br>');
-    html = '<p style="margin: 1rem 0; line-height: 1.7;">' + html + '</p>';
-    html = html.replace(/<p[^>]*><\/p>/g, '');
-    html = html.replace(/<p[^>]*><br><\/p>/g, '');
-    return html;
-  };
-
   // Scroll to top whenever step or category changes
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -145,6 +117,7 @@ const HRShieldIQ = () => {
   const neededSdkType = selectedPlan === 'onetime' ? 'onetime' : 'subscription';
 
   // Load PayPal SDK and render button when paywall opens
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (showPaywall && !paymentComplete && businessInfo.email && businessInfo.email.includes('@')) {
       if (paypalSdkType !== neededSdkType) {
@@ -179,6 +152,7 @@ const HRShieldIQ = () => {
     }
   }, [showPaywall, paymentComplete, businessInfo.email, neededSdkType, paypalSdkType]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (showPaywall && !paymentComplete && window.paypal && paypalSdkType === neededSdkType && !paypalLoading) {
       renderPayPalButton();
@@ -774,6 +748,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
   };
 
   // Start background generation when all questions answered
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (Object.keys(answers).length === 25 && !reportGenerating && !reportReady) {
       console.log('All questions answered, starting background report...');
@@ -782,12 +757,14 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
   }, [answers]);
 
   // Auto-start background report when entering preview
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (currentStep === 'preview' && !reportGenerating && !reportReady && Object.keys(answers).length === 25) {
       startBackgroundReportGeneration();
     }
   }, [currentStep]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (currentCategory === categories.length - 1) {
       const allAnswered = categories[currentCategory].questions.every(q => answers[q.id]);
@@ -797,6 +774,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
     }
   }, [currentCategory, answers]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (loading && reportReady && pendingReport) {
       console.log('Background report ready, showing to user...');
