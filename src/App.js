@@ -1507,9 +1507,9 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
           </div>
           <div class="issue-details">
             <div class="detail-box risk"><div class="detail-label">⚠️ Risk</div><div class="detail-text">${escapeHtml(issue.risk || '')}</div></div>
-            <div class="detail-box penalty"><div class="detail-label">💰 Potential Exposure</div><div class="detail-text" style="font-weight:600;color:#dc2626;">Varies by violation</div></div>
-            <div class="detail-box fix"><div class="detail-label">✅ Recommended Action</div><div class="detail-text">${escapeHtml(issue.fix || '')}</div></div>
-            <div class="detail-box effort"><div class="detail-label">⏱️ Estimated Effort</div><div class="detail-text">${escapeHtml(issue.effort || '')}</div></div>
+            <div class="detail-box penalty"><div class="detail-label">💰 Potential Penalty</div><div class="penalty-amount">${issue.penalty || 'Varies'}</div><div class="detail-text">${issue.penaltyNote || 'Per violation, depending on circumstances.'}</div></div>
+            <div class="detail-box fix"><div class="detail-label">✅ How to Fix</div><div class="detail-text">${escapeHtml(issue.fix || '')}</div></div>
+            <div class="detail-box effort"><div class="detail-label">⏱️ Effort</div><div class="detail-text"><strong>${escapeHtml(issue.effort || 'Varies')}</strong>${issue.effortNote ? '<br>' + escapeHtml(issue.effortNote) : ''}</div></div>
           </div>
         </div>`
       ).join('') : '';
@@ -1538,15 +1538,15 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
         r.goodPractices.map(p => `<div class="good-item"><span class="check">✓</span><span class="good-text">${escapeHtml(typeof p === 'string' ? p : (p.practice || ''))}</span><span class="good-value">+20</span></div>`).join('') + 
         '</div></div>' : '';
       
-      // Generate action plan with checkboxes
+      // Generate action plan with checkboxes, time estimates, and owners
       const week1Tasks = (r.actionPlan?.week1 || ['Review critical issues', 'Create I-9 folder', 'Order posters']).map(t => 
-        `<div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">${escapeHtml(t)}</div></div></div>`
+        `<div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">${escapeHtml(t)}</div><div class="action-meta"><span class="action-time">⏱️ 1-2 hours</span><span class="action-owner">👤 Manager/Admin</span></div></div></div>`
       ).join('');
       const week2Tasks = (r.actionPlan?.week2to4 || ['Schedule handbook review', 'Set up training']).map(t => 
-        `<div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">${escapeHtml(t)}</div></div></div>`
+        `<div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">${escapeHtml(t)}</div><div class="action-meta"><span class="action-time">⏱️ 2-4 hours</span><span class="action-owner">👤 Owner/HR</span></div></div></div>`
       ).join('');
       const ongoingTasks = (r.actionPlan?.ongoing || ['Document performance issues', 'Quarterly reviews']).map(t => 
-        `<div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">${escapeHtml(t)}</div></div></div>`
+        `<div class="action-item"><div class="action-checkbox"></div><div class="action-content"><div class="action-task">${escapeHtml(t)}</div><div class="action-meta"><span class="action-time">⏱️ Ongoing</span><span class="action-owner">👤 All Managers</span></div></div></div>`
       ).join('');
 
       const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HRShieldIQ Report - ${safeBusinessName}</title>
@@ -1636,6 +1636,7 @@ h3{font-family:Inter,sans-serif;color:#333;font-size:13pt;margin:20px 0 10px;}
 .detail-box.penalty .detail-label{color:#ca8a04;}
 .detail-box.effort .detail-label{color:#0369a1;}
 .detail-text{color:#444;font-size:10.5pt;line-height:1.6;}
+.penalty-amount{font-family:Inter,sans-serif;font-size:16pt;font-weight:bold;color:#dc2626;}
 .good-section{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:2px solid #10b981;border-radius:12px;padding:25px;margin:25px 0;}
 .good-section h3{font-family:Inter,sans-serif;color:#10b981;margin-bottom:15px;text-align:center;}
 .good-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
@@ -1652,6 +1653,9 @@ h3{font-family:Inter,sans-serif;color:#333;font-size:13pt;margin:20px 0 10px;}
 .action-checkbox{width:18px;height:18px;border:2px solid #2563EB;border-radius:4px;flex-shrink:0;margin-top:2px;}
 .action-content{flex:1;}
 .action-task{color:#333;font-size:10.5pt;}
+.action-meta{display:flex;gap:15px;margin-top:4px;}
+.action-time{font-family:Inter,sans-serif;font-size:9pt;color:#2563EB;font-weight:500;}
+.action-owner{font-family:Inter,sans-serif;font-size:9pt;color:#64748b;}
 .quick-ref{background:#1e293b;color:white;border-radius:12px;padding:25px;margin:25px 0;}
 .quick-ref h3{font-family:Inter,sans-serif;color:#60a5fa;text-align:center;margin-bottom:15px;}
 .quick-ref-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;}
@@ -1755,18 +1759,14 @@ h3{font-family:Inter,sans-serif;color:#333;font-size:13pt;margin:20px 0 10px;}
 </style></head><body>
 
 <div class="download-bar">
-<span>📄 Your HRShieldIQ™ Guidance Report</span>
+<span>📄 Your HRShieldIQ™ Report</span>
 <button onclick="window.print()">🖨️ Save as PDF / Print</button>
 </div>
 
 <div class="header">
 <div class="logo">HRShield<span>IQ</span>™</div>
-<p style="color:#666;">HR Compliance Guidance Report</p>
+<p style="color:#666;">HR Compliance Assessment</p>
 <p style="font-size:10pt;color:#888;">Prepared for: <strong>${safeBusinessName}</strong> | ${safeIndustry} | ${reportDate}</p>
-</div>
-
-<div class="guidance-note">
-📋 <strong>Guidance Document:</strong> This report provides educational recommendations based on your self-assessment. It is not a compliance audit, legal opinion, or certification. Consult qualified professionals for your specific situation.
 </div>
 
 <!-- Score + Comparison -->
@@ -1835,24 +1835,29 @@ h3{font-family:Inter,sans-serif;color:#333;font-size:13pt;margin:20px 0 10px;}
 
 <!-- Risk Analysis -->
 <div class="cost-analysis">
-  <h3>💰 Potential Risk vs. Investment to Improve</h3>
+  <h3>💰 Risk vs. Investment Analysis</h3>
   <div class="cost-grid">
     <div class="cost-box risk">
       <div class="cost-amount">${indData.exposure}</div>
-      <div class="cost-label">Estimated Exposure Range</div>
-      <div class="cost-detail">Based on common penalties for issues like yours</div>
+      <div class="cost-label">Potential Exposure</div>
+      <div class="cost-detail">Based on your ${r.criticalCount || 0} critical issues:<br>Fines + lawsuit defense + penalties</div>
     </div>
     <div class="cost-box invest">
       <div class="cost-amount">~$${fixCost.toLocaleString()}</div>
-      <div class="cost-label">Estimated Cost to Address</div>
-      <div class="cost-detail">Handbook updates, training, admin time</div>
+      <div class="cost-label">Est. Cost to Fix</div>
+      <div class="cost-detail">Handbook update + training + minor admin time</div>
     </div>
   </div>
-  <p class="cost-note">Addressing these areas could significantly reduce your risk exposure</p>
+  <p class="cost-note">Fixing these issues could save you <strong>${fixCost > 0 ? Math.round(parseInt(indData.exposure.replace(/[^0-9]/g, '')) / fixCost) : 10}x your investment</strong></p>
 </div>
 
 <h2>Executive Summary</h2>
 <p style="text-align:center;max-width:700px;margin:0 auto 15px;">${escapeHtml(r.executiveSummary || 'Assessment completed. Review the recommendations below.')}</p>
+
+<div style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:8px;padding:14px 18px;margin:15px auto;max-width:700px;text-align:center;">
+<p style="margin:0 0 4px;font-family:Inter;font-weight:600;color:#555;font-size:10pt;">What This Report Does Not Mean</p>
+<p style="margin:0;color:#666;font-size:9pt;">This is not a DOL finding or legal determination. It highlights areas to strengthen based on common compliance requirements.</p>
+</div>
 
 <h2>Top 3 Priorities</h2>
 ${prioritiesHtml}
@@ -1863,9 +1868,9 @@ ${goodHtml}
 
 <!-- Action Plan -->
 <div class="action-plan">
-  <h2>🎯 Recommended 30-Day Action Plan</h2>
+  <h2>🎯 Your 30-Day Action Plan</h2>
   <div class="action-week">
-    <h4>⚡ Week 1: Quick Wins</h4>
+    <h4>⚡ Week 1: Quick Wins (This Week!)</h4>
     ${week1Tasks}
   </div>
   <div class="action-week">
@@ -1873,50 +1878,50 @@ ${goodHtml}
     ${week2Tasks}
   </div>
   <div class="action-week">
-    <h4>🔄 Ongoing Practices</h4>
+    <h4>🔄 Ongoing (Set Calendar Reminders)</h4>
     ${ongoingTasks}
   </div>
 </div>
 
 <!-- Quick Reference -->
 <div class="quick-ref">
-  <h3>📋 Common Compliance Timeframes</h3>
+  <h3>📋 Quick Reference Card</h3>
   <div class="quick-ref-grid">
     <div class="quick-ref-item">
-      <div class="quick-ref-label">Form I-9 (Work Eligibility)</div>
+      <div class="quick-ref-label">I-9 Deadline</div>
       <div class="quick-ref-value">3 Days</div>
       <div class="quick-ref-note">From hire start date</div>
     </div>
     <div class="quick-ref-item">
       <div class="quick-ref-label">Personnel Records</div>
-      <div class="quick-ref-value">3+ Years</div>
+      <div class="quick-ref-value">3 Years</div>
       <div class="quick-ref-note">After termination</div>
     </div>
     <div class="quick-ref-item">
       <div class="quick-ref-label">Payroll Records</div>
-      <div class="quick-ref-value">3+ Years</div>
-      <div class="quick-ref-note">Fair Labor Standards Act (FLSA)</div>
+      <div class="quick-ref-value">3 Years</div>
+      <div class="quick-ref-note">FLSA requirement</div>
     </div>
   </div>
 </div>
 
 <!-- Share -->
 <div class="share-box">
-  <h3>📤 Consider Sharing This Report With</h3>
+  <h3>📤 Who Should See This Report</h3>
   <div class="share-grid">
-    <div class="share-item"><div class="share-role">Employment Attorney</div><div class="share-why">Policy review</div></div>
-    <div class="share-item"><div class="share-role">Insurance Agent</div><div class="share-why">EPLI (Employment Practices Liability Insurance)</div></div>
-    <div class="share-item"><div class="share-role">Accountant/CPA</div><div class="share-why">Worker Classification</div></div>
-    <div class="share-item"><div class="share-role">HR Consultant</div><div class="share-why">Implementation</div></div>
+    <div class="share-item"><div class="share-role">Employment Attorney</div><div class="share-why">Handbook review</div></div>
+    <div class="share-item"><div class="share-role">Insurance Agent</div><div class="share-why">EPLI coverage</div></div>
+    <div class="share-item"><div class="share-role">Accountant/CPA</div><div class="share-why">Classification questions</div></div>
+    <div class="share-item"><div class="share-role">Office Manager</div><div class="share-why">Implementation</div></div>
   </div>
 </div>
 
 <!-- Reassess -->
 <div class="next-steps">
-  <h3>📅 Reassess Your Progress</h3>
-  <p style="font-size:10pt;color:#6b21a8;">After implementing changes, consider reassessing in:</p>
-  <div class="next-date">${reassessDate}</div>
-  <p style="font-size:9pt;color:#7c3aed;">Goal: Continue improving your compliance practices</p>
+  <h3>📅 Reassess Your Compliance</h3>
+  <p style="font-size:10pt;color:#6b21a8;">After implementing these changes, reassess in:</p>
+  <div class="next-date">90 Days — ${reassessDate}</div>
+  <p style="font-size:9pt;color:#7c3aed;">Goal: ${score < 300 ? 'Move from HIGH RISK → MODERATE (300+ points)' : score < 400 ? 'Move from MODERATE → STRONG (400+ points)' : 'Maintain STRONG compliance practices'}</p>
 </div>
 
 <!-- Resources -->
@@ -1970,13 +1975,13 @@ ${goodHtml}
 </div>
 
 <div class="disclaimer">
-<strong>Important Disclaimer:</strong> This HRShieldIQ™ report provides educational guidance based on your self-reported answers about general HR practices. This is NOT a compliance audit, legal opinion, HR certification, or guarantee of compliance with any federal, state, or local law. Employment law is complex and varies by jurisdiction. <strong>Always consult qualified employment attorneys and HR professionals</strong> before making decisions about your specific HR practices. TechShield KC LLC assumes no liability for actions taken based on this guidance.
+<strong>Important:</strong> This HRShieldIQ™ assessment is educational guidance based on self-reported answers. It is not an HR audit, compliance certification, or legal advice. Always consult qualified professionals for your specific situation.
 </div>
 
 <div class="footer">
 <p><strong>TechShield KC LLC</strong></p>
 <p>hrshieldiq.com | info@techshieldkc.com | Kansas City, MO</p>
-<p style="margin-top:8px;">© ${new Date().getFullYear()} HRShieldIQ™ — Educational Guidance Tool</p>
+<p style="margin-top:8px;">© ${new Date().getFullYear()} HRShieldIQ™</p>
 </div>
 
 </body></html>`;
