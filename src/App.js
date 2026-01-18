@@ -117,7 +117,7 @@ const HRShieldIQ = () => {
   const neededSdkType = selectedPlan === 'onetime' ? 'onetime' : 'subscription';
 
   // Load PayPal SDK and render button when paywall opens
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (showPaywall && !paymentComplete && businessInfo.email && businessInfo.email.includes('@')) {
       if (paypalSdkType !== neededSdkType) {
@@ -152,12 +152,12 @@ const HRShieldIQ = () => {
     }
   }, [showPaywall, paymentComplete, businessInfo.email, neededSdkType, paypalSdkType]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (showPaywall && !paymentComplete && window.paypal && paypalSdkType === neededSdkType && !paypalLoading) {
       renderPayPalButton();
     }
   }, [selectedPlan, discountedPrice]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const renderPayPalButton = () => {
     if (!paypalRef.current || !window.paypal) return;
@@ -747,8 +747,8 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
     }
   };
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   // Start background generation when all questions answered
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (Object.keys(answers).length === 25 && !reportGenerating && !reportReady) {
       console.log('All questions answered, starting background report...');
@@ -757,14 +757,12 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
   }, [answers]);
 
   // Auto-start background report when entering preview
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (currentStep === 'preview' && !reportGenerating && !reportReady && Object.keys(answers).length === 25) {
       startBackgroundReportGeneration();
     }
   }, [currentStep]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (currentCategory === categories.length - 1) {
       const allAnswered = categories[currentCategory].questions.every(q => answers[q.id]);
@@ -774,7 +772,6 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
     }
   }, [currentCategory, answers]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (loading && reportReady && pendingReport) {
       console.log('Background report ready, showing to user...');
@@ -786,6 +783,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
       }
     }
   }, [loading, reportReady, pendingReport]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const currentCategoryData = categories[currentCategory];
   const allQuestionsAnswered = currentCategoryData?.questions.every(q => answers[q.id]);
@@ -919,7 +917,7 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
               </div>
               <div style={{ backgroundColor: '#141414', borderRadius: '12px', padding: '24px', border: '1px solid #252525' }}>
                 <p style={{ fontSize: '1.05rem', color: '#ccc', lineHeight: 1.7, margin: 0 }}>
-                  Built by an <span style={{ color: '#fff', fontWeight: 500 }}>IT Director who spent 20 years managing HR compliance</span> across 150+ locations. Vetted by a <span style={{ color: '#fff', fontWeight: 500 }}>healthcare HR VP</span> who's lived this stuff.
+                  Built by a <span style={{ color: '#fff', fontWeight: 500 }}>20-year IT veteran</span> who managed operations across 150+ locations. Developed with input from a <span style={{ color: '#fff', fontWeight: 500 }}>healthcare HR VP</span> who's lived this stuff.
                 </p>
               </div>
             </div>
