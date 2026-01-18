@@ -1495,13 +1495,37 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
       const safeBusinessName = escapeHtml(businessInfo.name);
       const safeIndustry = escapeHtml(businessInfo.industry);
       
-      const prioritiesHtml = (r.priorities || []).map((p, i) => `<div class="priority-box"><h4>${i+1}. ${escapeHtml(p.title || '')}</h4><p>${escapeHtml(p.reason || '')}</p></div>`).join('');
+      const prioritiesHtml = (r.priorities || []).map((p, i) => 
+        `<div class="priority-box"><h4>${i+1}. ${escapeHtml(p.title || '')}</h4><p>${escapeHtml(p.reason || '')}</p></div>`
+      ).join('');
       
-      const criticalHtml = (r.criticalIssues || []).length > 0 ? '<h2>🔴 Critical Issues</h2>' + r.criticalIssues.map(issue => `<div class="issue-card critical"><div class="issue-header"><span class="issue-title">${escapeHtml(issue.topic || '')}</span><span class="badge critical">CRITICAL</span></div><div class="issue-answer">"${escapeHtml(issue.answer || '')}"</div><div class="issue-content"><p><strong>Risk:</strong> ${escapeHtml(issue.risk || '')}</p><p><strong>Fix:</strong> ${escapeHtml(issue.fix || '')}</p><p><strong>Effort:</strong> ⏱️ ${escapeHtml(issue.effort || '')}</p></div></div>`).join('') : '';
+      const criticalHtml = (r.criticalIssues || []).length > 0 ? '<h2>Critical Issues</h2>' + r.criticalIssues.map(issue => 
+        `<div class="issue-card critical">
+          <div class="issue-title">${escapeHtml(issue.topic || '')}</div>
+          <span class="badge critical">CRITICAL</span>
+          <div class="issue-content">
+            <div class="issue-row risk-row"><span class="issue-label">Risk</span><p class="issue-text">${escapeHtml(issue.risk || '')}</p></div>
+            <div class="issue-row fix-row"><span class="issue-label">Fix</span><p class="issue-text">${escapeHtml(issue.fix || '')}</p></div>
+            <div class="issue-row effort-row"><span class="issue-label">Effort</span><p class="issue-text">${escapeHtml(issue.effort || '')}</p></div>
+          </div>
+        </div>`
+      ).join('') : '';
       
-      const attentionHtml = (r.attentionIssues || []).length > 0 ? '<h2>🟡 Items Needing Attention</h2>' + r.attentionIssues.map(issue => `<div class="issue-card attention"><div class="issue-header"><span class="issue-title">${escapeHtml(issue.topic || '')}</span><span class="badge attention">ATTENTION</span></div><div class="issue-answer">"${escapeHtml(issue.answer || '')}"</div><div class="issue-content"><p><strong>Risk:</strong> ${escapeHtml(issue.risk || '')}</p><p><strong>Fix:</strong> ${escapeHtml(issue.fix || '')}</p><p><strong>Effort:</strong> ⏱️ ${escapeHtml(issue.effort || '')}</p></div></div>`).join('') : '';
+      const attentionHtml = (r.attentionIssues || []).length > 0 ? '<h2>Needs Attention</h2>' + r.attentionIssues.map(issue => 
+        `<div class="issue-card attention">
+          <div class="issue-title">${escapeHtml(issue.topic || '')}</div>
+          <span class="badge attention">ATTENTION</span>
+          <div class="issue-content">
+            <div class="issue-row fix-row"><span class="issue-label">Fix</span><p class="issue-text">${escapeHtml(issue.fix || '')}</p></div>
+            <div class="issue-row effort-row"><span class="issue-label">Effort</span><p class="issue-text">${escapeHtml(issue.effort || '')}</p></div>
+          </div>
+        </div>`
+      ).join('') : '';
       
-      const goodHtml = (r.goodPractices || []).length > 0 ? '<div class="good-section"><h3>✅ What You\'re Doing Well</h3><div class="good-grid">' + r.goodPractices.map(p => `<div class="good-item"><span class="check">✓</span>${escapeHtml(typeof p === 'string' ? p : (p.practice || ''))}</div>`).join('') + '</div></div>' : '';
+      const goodHtml = (r.goodPractices || []).length > 0 ? 
+        `<div class="good-section"><h3>✓ Good Practices Already in Place</h3><div class="good-list">` + 
+        r.goodPractices.map(p => `<div class="good-item"><span class="check">✓</span><span class="good-text">${escapeHtml(typeof p === 'string' ? p : (p.practice || ''))}</span></div>`).join('') + 
+        '</div></div>' : '';
       
       const week1 = (r.actionPlan?.week1 || []).map(t => `<li>${escapeHtml(t)}</li>`).join('');
       const week2 = (r.actionPlan?.week2to4 || []).map(t => `<li>${escapeHtml(t)}</li>`).join('');
@@ -1509,70 +1533,192 @@ CRITICAL: Return ONLY valid JSON, no markdown.`;
       
       const riskColor = r.riskLevel === 'HIGH RISK' ? '#dc2626' : r.riskLevel === 'ELEVATED RISK' ? '#f59e0b' : r.riskLevel === 'MODERATE' ? '#3b82f6' : '#10b981';
 
-      const htmlContent = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HRShieldIQ Report - ' + safeBusinessName + '</title>' +
-        '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;max-width:850px;margin:0 auto;padding:40px;background:#fff;color:#333;line-height:1.6;font-size:11pt}' +
-        '.download-bar{background:#2563EB;color:white;padding:15px 20px;margin:-40px -40px 30px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}' +
-        '.download-bar button{background:white;color:#2563EB;border:none;padding:10px 25px;border-radius:6px;font-weight:600;cursor:pointer;font-size:14px}' +
-        '.header{text-align:center;margin-bottom:30px;padding-bottom:25px;border-bottom:3px solid #2563EB}' +
-        '.logo{font-size:32px;font-weight:bold;margin-bottom:5px}.logo span{color:#2563EB}' +
-        '.header p{color:#666;margin:5px 0}.header .meta{font-size:10pt;color:#888}' +
-        'h2{color:#333;font-size:16pt;margin:30px 0 15px;padding-bottom:8px;border-bottom:2px solid #2563EB}' +
-        '.score-box{background:#eff6ff;border:3px solid #2563EB;padding:30px;border-radius:12px;text-align:center;margin:25px 0}' +
-        '.score-number{font-size:48pt;font-weight:bold;color:#2563EB}.score-label{font-size:14pt;color:#666;margin-top:5px}' +
-        '.risk-level{display:inline-block;background:' + riskColor + ';color:white;padding:8px 20px;border-radius:20px;font-weight:600;margin-top:15px}' +
-        '.summary-table{display:flex;justify-content:center;gap:30px;margin:20px 0;flex-wrap:wrap}' +
-        '.summary-item{text-align:center;padding:15px 25px;border-radius:8px;min-width:120px}' +
-        '.summary-item.critical{background:#fee2e2}.summary-item.attention{background:#fef3c7}.summary-item.good{background:#d1fae5}' +
-        '.summary-item .num{font-size:28pt;font-weight:bold}' +
-        '.summary-item.critical .num{color:#dc2626}.summary-item.attention .num{color:#f59e0b}.summary-item.good .num{color:#10b981}' +
-        '.summary-item .label{font-size:10pt;color:#666}' +
-        '.priority-box{background:#eff6ff;border-left:4px solid #2563EB;padding:20px;margin:15px 0;border-radius:0 8px 8px 0}' +
-        '.priority-box h4{color:#2563EB;margin-bottom:8px}' +
-        '.issue-card{background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:20px;margin:15px 0}' +
-        '.issue-card.critical{border-left:4px solid #dc2626}.issue-card.attention{border-left:4px solid #f59e0b}' +
-        '.issue-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px}' +
-        '.issue-title{font-weight:600;color:#333}' +
-        '.badge{padding:4px 12px;border-radius:12px;font-size:9pt;font-weight:600}' +
-        '.badge.critical{background:#fee2e2;color:#dc2626}.badge.attention{background:#fef3c7;color:#b45309}' +
-        '.issue-answer{background:#f5f5f5;padding:10px 15px;border-radius:6px;font-style:italic;color:#666;margin:10px 0}' +
-        '.issue-content p{margin:8px 0}' +
-        '.good-section{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:2px solid #10b981;border-radius:12px;padding:20px 25px;margin:20px 0}' +
-        '.good-section h3{color:#10b981;margin-bottom:15px;font-size:14pt;text-align:center}' +
-        '.good-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px}' +
-        '.good-item{display:flex;align-items:center;gap:8px;background:white;border:1px solid #10b981;border-radius:8px;padding:10px 14px;font-size:11pt;color:#166534}' +
-        '.good-item .check{color:#10b981;font-weight:bold;font-size:14pt}' +
-        '.action-plan{background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);border:2px solid #2563EB;padding:25px;border-radius:12px;margin:25px 0}' +
-        '.action-plan h2{color:#2563EB;border:none;margin:0 0 15px;font-size:16pt;text-align:center}' +
-        '.action-week{background:white;border-radius:8px;padding:15px 20px;margin:12px 0}' +
-        '.action-week h3{color:#2563EB;font-size:13pt;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #bfdbfe}' +
-        '.action-week ul{margin:0;padding-left:20px}.action-week li{margin:8px 0;color:#333;font-size:11pt}' +
-        '.share-box{background:#f0f9ff;border:2px solid #0ea5e9;padding:20px 25px;border-radius:8px;margin:20px 0;text-align:center}' +
-        '.share-box h3{color:#0369a1;margin-bottom:15px;font-size:14pt}' +
-        '.share-list{display:grid;grid-template-columns:1fr 1fr;gap:12px 25px;text-align:left;max-width:650px;margin:0 auto}' +
-        '.share-item{font-size:11pt;color:#333}' +
-        '.consult-box{background:#eff6ff;border:2px solid #2563EB;padding:20px;border-radius:8px;margin:20px 0;text-align:center}' +
-        '.resources{background:#f0f9ff;border:2px solid #0ea5e9;padding:20px;border-radius:8px;margin:20px 0;text-align:center}' +
-        '.resources h3{color:#0369a1;margin-bottom:12px;font-size:14pt}' +
-        '.res-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}' +
-        '.res-grid a{display:block;background:white;padding:12px 10px;border-radius:6px;color:#2563EB;text-decoration:none;font-size:10pt;font-weight:500;text-align:center;border:1px solid #e0f2fe}' +
-        '.disclaimer{background:#f5f5f5;padding:12px 15px;border-radius:8px;font-size:9pt;color:#666;margin:20px 0;text-align:center}' +
-        '.footer{text-align:center;margin-top:25px;padding-top:15px;border-top:2px solid #2563EB;color:#888;font-size:9pt}' +
-        '.footer strong{color:#2563EB}' +
-        '@media print{.download-bar{display:none!important}}</style></head><body>' +
-        '<div class="download-bar"><span>📄 Your HRShieldIQ™ Report</span><button onclick="window.print()">🖨️ Save as PDF / Print</button></div>' +
-        '<div class="header"><div class="logo">HRShield<span>IQ</span>™</div><p>Employment Compliance Assessment</p><p class="meta">Prepared for: <strong>' + safeBusinessName + '</strong> | ' + safeIndustry + ' | ' + new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + '</p></div>' +
-        '<div class="score-box"><div class="score-number">' + (r.score || 0) + '</div><div class="score-label">out of 500 points</div><div class="risk-level">' + (r.riskLevel || 'ASSESSED') + '</div></div>' +
-        '<div class="summary-table"><div class="summary-item critical"><div class="num">' + (r.criticalCount || 0) + '</div><div class="label">Critical Issues</div></div><div class="summary-item attention"><div class="num">' + (r.attentionCount || 0) + '</div><div class="label">Needs Attention</div></div><div class="summary-item good"><div class="num">' + (r.goodCount || 0) + '</div><div class="label">Good Practices</div></div></div>' +
-        '<h2>Executive Summary</h2><p>' + escapeHtml(r.executiveSummary || 'Assessment completed. See details below.') + '</p>' +
-        '<h2>Top 3 Priorities</h2>' + prioritiesHtml +
-        criticalHtml + attentionHtml + goodHtml +
-        '<div class="action-plan"><h2>🎯 Your 30-Day Action Plan</h2><div class="action-week"><h3>⚡ Week 1: Quick Wins</h3><ul>' + week1 + '</ul></div><div class="action-week"><h3>🔧 Week 2-4: Core Improvements</h3><ul>' + week2 + '</ul></div><div class="action-week"><h3>🔄 Ongoing</h3><ul>' + ongoing + '</ul></div></div>' +
-        '<div class="share-box"><h3>📤 Who to Share This Report With</h3><div class="share-list"><div class="share-item"><strong>Employment Attorney</strong> for handbook & policy review</div><div class="share-item"><strong>Insurance Agent</strong> for EPLI (employment practices liability) coverage</div><div class="share-item"><strong>Accountant/CPA</strong> for classification & wage issues</div><div class="share-item"><strong>Office Manager</strong> for day-to-day implementation</div></div></div>' +
-        '<div class="consult-box"><h3 style="color:#2563EB;margin-bottom:8px;font-size:14pt;">Need Help Implementing These Recommendations?</h3><p style="margin:0 0 10px;color:#555;font-size:11pt;">TechShield KC can assist with consultations and HR compliance support.</p><p style="margin:0;"><a href="https://www.techshieldkc.com" style="color:#2563EB;text-decoration:none;font-size:14pt;font-weight:600;">www.techshieldkc.com</a></p><p style="margin:5px 0 0;color:#555;font-size:11pt;"><a href="mailto:info@techshieldkc.com" style="color:#2563EB;">info@techshieldkc.com</a> | Kansas City, MO</p></div>' +
-        '<div class="resources"><h3>📚 Free Resources</h3><div class="res-grid"><a href="https://dol.gov/agencies/whd">DOL (Dept. of Labor)</a><a href="https://eeoc.gov/employers">EEOC (Equal Opportunity)</a><a href="https://shrm.org">SHRM (HR Association)</a><a href="https://uscis.gov/i-9">I-9 Central (Work Eligibility)</a></div></div>' +
-        '<div class="disclaimer"><strong>Important:</strong> This HRShieldIQ™ assessment is educational guidance based on self-reported answers. It is not an HR audit, compliance certification, or legal advice.</div>' +
-        '<div class="footer"><p><strong>TechShield KC LLC</strong></p><p>hrshieldiq.com | <a href="mailto:info@techshieldkc.com" style="color:#888;">info@techshieldkc.com</a></p><p style="margin-top:8px;">© ' + new Date().getFullYear() + ' HRShieldIQ™</p></div>' +
-        '</body></html>';
+      // Industry-specific risk stats
+      const industryStats = {
+        'Healthcare / Medical': { stat: 'Healthcare employers face 30% more wage & hour lawsuits than other industries.', source: 'Department of Labor (DOL) Enforcement Data' },
+        'Religious Organization': { stat: 'Religious organizations face unique compliance challenges with ministerial exceptions and volunteer classification.', source: 'EEOC Guidance' },
+        'Daycare / Childcare': { stat: 'Childcare facilities face strict background check and ratio requirements with penalties up to $10,000 per violation.', source: 'State Licensing Boards' },
+        'Retail / Restaurant': { stat: 'Restaurants pay $1.9 billion annually in wage & hour settlements—tip credit and overtime are top violations.', source: 'DOL Wage & Hour Division' },
+        'Construction / Trades': { stat: 'Construction employers face 40% higher OSHA inspection rates and Davis-Bacon Act scrutiny on federal projects.', source: 'OSHA Enforcement Data' },
+        'Professional Services': { stat: 'Professional services firms face increased DOL audits for exempt employee misclassification.', source: 'DOL Wage & Hour Division' },
+        'Manufacturing': { stat: 'Manufacturing sees 25% of all OSHA violations with average penalties of $15,000 per serious violation.', source: 'OSHA Statistics' },
+        'Nonprofit': { stat: 'Nonprofits face unique risks with volunteer vs. employee classification—misclassification penalties start at $50 per worker.', source: 'IRS & DOL Guidelines' }
+      };
+      const industryStat = industryStats[businessInfo.industry] || { stat: 'Small businesses face an average of $125,000 in legal costs per employment lawsuit.', source: 'Hiscox Employment Practices Liability Report' };
+
+      const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HRShieldIQ Report - ${safeBusinessName}</title>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Merriweather,Georgia,serif;max-width:850px;margin:0 auto;padding:40px;background:#fff;color:#333;line-height:1.8;font-size:11pt;}
+.download-bar{font-family:Inter,sans-serif;background:#2563EB;color:white;padding:15px 20px;margin:-40px -40px 30px -40px;display:flex;justify-content:space-between;align-items:center;}
+.download-bar button{background:white;color:#2563EB;border:none;padding:10px 25px;border-radius:6px;font-weight:600;cursor:pointer;font-size:14px;font-family:Inter,sans-serif;}
+.header{text-align:center;margin-bottom:30px;padding-bottom:25px;border-bottom:3px solid #2563EB;}
+.logo{font-family:Inter,sans-serif;font-size:32px;font-weight:bold;margin-bottom:5px;}
+.logo span{color:#2563EB;}
+.header p{color:#666;margin:5px 0;}
+.header .meta{font-size:10pt;color:#888;}
+h2{font-family:Merriweather,Georgia,serif;color:#333;font-size:16pt;margin:30px 0 15px;padding-bottom:8px;border-bottom:2px solid #2563EB;text-align:center;}
+.score-box{background:#eff6ff;border:3px solid #2563EB;padding:30px;border-radius:12px;text-align:center;margin:25px 0;}
+.score-number{font-family:Inter,sans-serif;font-size:48pt;font-weight:bold;color:#2563EB;}
+.score-label{font-size:14pt;color:#666;margin-top:5px;}
+.risk-level{font-family:Inter,sans-serif;display:inline-block;background:${riskColor};color:white;padding:8px 20px;border-radius:20px;font-weight:600;margin-top:15px;}
+.summary-table{display:flex;justify-content:center;gap:30px;margin:20px 0;flex-wrap:wrap;}
+.summary-item{text-align:center;padding:15px 25px;border-radius:8px;min-width:120px;}
+.summary-item.critical{background:#fee2e2;}
+.summary-item.attention{background:#fef3c7;}
+.summary-item.good{background:#d1fae5;}
+.summary-item .num{font-family:Inter,sans-serif;font-size:28pt;font-weight:bold;}
+.summary-item.critical .num{color:#dc2626;}
+.summary-item.attention .num{color:#f59e0b;}
+.summary-item.good .num{color:#10b981;}
+.summary-item .label{font-size:10pt;color:#666;}
+.industry-stat{background:#fee2e2;border:2px solid #dc2626;border-radius:12px;padding:24px;margin:25px 0;text-align:center;}
+.industry-stat h3{font-family:Inter,sans-serif;color:#991b1b;margin:0 0 15px;font-size:13pt;}
+.industry-stat-content{background:white;padding:18px;border-radius:8px;border-left:4px solid #dc2626;}
+.priority-box{background:#eff6ff;border-left:4px solid #2563EB;padding:20px;margin:15px auto;border-radius:0 8px 8px 0;max-width:700px;}
+.priority-box h4{font-family:Inter,sans-serif;color:#2563EB;margin-bottom:8px;text-align:center;}
+.priority-box p{text-align:center;}
+.issue-card{background:#fafafa;border:1px solid #e5e5e5;border-radius:12px;padding:24px 28px;margin:20px auto;max-width:700px;text-align:center;}
+.issue-card.critical{border:2px solid #dc2626;border-top:6px solid #dc2626;}
+.issue-card.attention{border:2px solid #f59e0b;border-top:6px solid #f59e0b;}
+.issue-title{font-family:Inter,sans-serif;font-weight:700;color:#333;font-size:14pt;margin-bottom:6px;}
+.badge{font-family:Inter,sans-serif;display:inline-block;padding:4px 14px;border-radius:12px;font-size:9pt;font-weight:600;margin-bottom:16px;}
+.badge.critical{background:#fee2e2;color:#dc2626;}
+.badge.attention{background:#fef3c7;color:#b45309;}
+.issue-content{text-align:center;}
+.issue-row{margin:16px 0;padding:14px 20px;border-radius:8px;background:#fff;text-align:center;}
+.issue-row.risk-row{background:#fff5f5;border:1px solid #fecaca;}
+.issue-row.fix-row{background:#f0fdf4;border:1px solid #bbf7d0;}
+.issue-row.effort-row{background:#fefce8;border:1px solid #fef08a;}
+.issue-label{font-family:Inter,sans-serif;font-weight:700;font-size:10pt;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:inline-block;padding-bottom:3px;}
+.issue-row.risk-row .issue-label{color:#dc2626;border-bottom:2px solid #dc2626;}
+.issue-row.fix-row .issue-label{color:#16a34a;border-bottom:2px solid #16a34a;}
+.issue-row.effort-row .issue-label{color:#ca8a04;border-bottom:2px solid #ca8a04;}
+.issue-text{color:#444;line-height:1.7;margin:0;}
+.good-section{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:2px solid #10b981;border-radius:12px;padding:25px 30px;margin:25px 0;}
+.good-section h3{font-family:Inter,sans-serif;color:#10b981;margin-bottom:20px;font-size:14pt;text-align:center;}
+.good-list{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;}
+.good-item{display:flex;align-items:center;gap:10px;background:white;border:1px solid #10b981;border-radius:8px;padding:12px 16px;}
+.good-item .check{color:#10b981;font-weight:bold;font-size:16pt;}
+.good-text{font-size:10.5pt;color:#166534;}
+.action-plan{background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);border:2px solid #2563EB;padding:30px 35px;border-radius:12px;margin:30px 0;}
+.action-plan h2{font-family:Inter,sans-serif;color:#2563EB;border:none;margin:0 0 25px;font-size:18pt;text-align:center;}
+.action-week{background:white;border-radius:10px;padding:20px 25px;margin:15px 0;box-shadow:0 2px 10px rgba(0,0,0,0.06);text-align:center;}
+.action-week h3{font-family:Inter,sans-serif;color:#2563EB;font-size:13pt;margin:0 0 15px;padding-bottom:10px;border-bottom:1px solid #bfdbfe;}
+.action-list{list-style:none;margin:0;padding:0;}
+.action-list li{margin:8px 4px;color:#333;font-size:10.5pt;padding:8px 14px;background:#eff6ff;border-radius:6px;display:inline-block;border:1px solid #bfdbfe;}
+.share-box{background:#f0f9ff;border:2px solid #0ea5e9;padding:24px;border-radius:10px;margin:25px 0;text-align:center;}
+.share-box h3{font-family:Inter,sans-serif;color:#0369a1;margin-bottom:18px;font-size:14pt;}
+.share-list{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;text-align:left;max-width:600px;margin:0 auto;}
+.share-item{font-size:11pt;color:#333;}
+.consult-box{background:#eff6ff;border:2px solid #2563EB;padding:24px;border-radius:10px;margin:25px 0;text-align:center;}
+.consult-box h3{font-family:Inter,sans-serif;color:#2563EB;margin-bottom:10px;font-size:14pt;}
+.resources{background:#f0f9ff;border:2px solid #0ea5e9;padding:24px;border-radius:10px;margin:25px 0;text-align:center;}
+.resources h3{font-family:Inter,sans-serif;color:#0369a1;margin-bottom:15px;font-size:14pt;}
+.res-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.res-grid a{font-family:Inter,sans-serif;display:block;background:white;padding:14px 12px;border-radius:6px;color:#2563EB;text-decoration:none;font-size:10pt;font-weight:500;text-align:center;border:1px solid #e0f2fe;}
+.disclaimer{background:#f5f5f5;padding:14px 18px;border-radius:8px;font-size:9pt;color:#666;margin:25px 0;text-align:center;}
+.not-mean{background:#f5f5f5;border:1px solid #e0e0e0;border-radius:8px;padding:16px 20px;margin:20px auto;max-width:700px;text-align:center;}
+.not-mean h4{font-family:Inter,sans-serif;font-weight:600;color:#555;font-size:11pt;margin:0 0 6px;}
+.not-mean p{margin:0;color:#666;font-size:10pt;}
+.footer{text-align:center;margin-top:35px;padding-top:25px;border-top:2px solid #2563EB;color:#888;font-size:9pt;}
+.footer strong{color:#2563EB;}
+@media print{.download-bar{display:none !important;}}
+</style></head><body>
+
+<div class="download-bar">
+<span>📄 Your HRShieldIQ™ Report</span>
+<button onclick="window.print()">🖨️ Save as PDF / Print</button>
+</div>
+
+<div class="header">
+<div class="logo">HRShield<span>IQ</span>™</div>
+<p>HR Compliance Assessment</p>
+<p class="meta">Prepared for: <strong>${safeBusinessName}</strong> | ${safeIndustry} | ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+</div>
+
+<div class="score-box">
+<div class="score-number">${r.score || 0}</div>
+<div class="score-label">out of 500 points</div>
+<p style="font-size:10pt;color:#888;margin-top:8px;">Typical small businesses score between 250–350</p>
+<div class="risk-level">${r.riskLevel || 'ASSESSED'}</div>
+</div>
+
+<div class="summary-table">
+<div class="summary-item critical"><div class="num">${r.criticalCount || 0}</div><div class="label">Critical Issues</div></div>
+<div class="summary-item attention"><div class="num">${r.attentionCount || 0}</div><div class="label">Needs Attention</div></div>
+<div class="summary-item good"><div class="num">${r.goodCount || 0}</div><div class="label">Good Practices</div></div>
+</div>
+
+<div class="industry-stat">
+<h3>⚠️ ${safeIndustry} Industry Risk</h3>
+<div class="industry-stat-content">
+<p style="margin:0 0 8px;color:#991b1b;font-weight:600;font-size:12pt;">${industryStat.stat}</p>
+<p style="margin:0;font-size:9pt;color:#666;font-style:italic;">Source: ${industryStat.source}</p>
+</div>
+</div>
+
+<h2>Executive Summary</h2>
+<p style="text-align:center;max-width:700px;margin:0 auto 20px;">${escapeHtml(r.executiveSummary || 'Assessment completed. See details below.')}</p>
+
+<div class="not-mean">
+<h4>What This Report Does Not Mean</h4>
+<p>This assessment does not indicate a DOL violation, audit failure, or regulatory finding. It highlights areas where HR practices could be strengthened to reduce compliance risk.</p>
+</div>
+
+<h2>Top 3 Priorities</h2>
+${prioritiesHtml}
+
+${criticalHtml}
+${attentionHtml}
+${goodHtml}
+
+<div class="action-plan">
+<h2>🎯 Your 30-Day Action Plan</h2>
+<div class="action-week"><h3>⚡ Week 1: Quick Wins</h3><ul class="action-list">${week1}</ul></div>
+<div class="action-week"><h3>🔧 Week 2–4: Core Improvements</h3><ul class="action-list">${week2}</ul></div>
+<div class="action-week"><h3>🔄 Ongoing</h3><ul class="action-list">${ongoing}</ul></div>
+</div>
+
+<div class="share-box">
+<h3>📤 Who to Share This Report With</h3>
+<div class="share-list">
+<div class="share-item"><strong>Employment Attorney</strong> — for handbook review</div>
+<div class="share-item"><strong>Insurance Agent</strong> — for EPLI coverage</div>
+<div class="share-item"><strong>Accountant/CPA</strong> — for classification questions</div>
+<div class="share-item"><strong>Office Manager</strong> — for implementation</div>
+</div>
+</div>
+
+<div class="consult-box">
+<h3>Need Help Implementing These Recommendations?</h3>
+<p style="margin:8px 0;color:#555;font-size:11pt;">TechShield KC can assist with consultations and HR compliance support.</p>
+<p style="margin:8px 0;"><a href="https://www.techshieldkc.com" style="color:#2563EB;text-decoration:none;font-size:14pt;font-weight:600;">www.techshieldkc.com</a></p>
+<p style="margin:8px 0;color:#555;font-size:11pt;"><a href="mailto:info@techshieldkc.com" style="color:#2563EB;">info@techshieldkc.com</a> | Kansas City, MO</p>
+</div>
+
+<div class="resources">
+<h3>📚 Free Resources</h3>
+<div class="res-grid">
+<a href="https://dol.gov/agencies/whd">DOL Wage & Hour</a>
+<a href="https://eeoc.gov/employers">EEOC Employers</a>
+<a href="https://shrm.org">SHRM Resources</a>
+<a href="https://uscis.gov/i-9">I-9 Central</a>
+</div>
+</div>
+
+<div class="disclaimer">
+<strong>Important:</strong> This HRShieldIQ™ assessment is educational guidance based on self-reported answers. It is not an HR audit, compliance certification, or legal advice.
+</div>
+
+<div class="footer">
+<p><strong>TechShield KC LLC</strong></p>
+<p>hrshieldiq.com | <a href="mailto:info@techshieldkc.com" style="color:#888;">info@techshieldkc.com</a></p>
+<p style="margin-top:8px;">© ${new Date().getFullYear()} HRShieldIQ™</p>
+</div>
+
+</body></html>`;
 
       reportWindow.document.write(htmlContent);
       reportWindow.document.close();
