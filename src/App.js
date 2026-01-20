@@ -456,56 +456,6 @@ const HRShieldIQ = () => {
   };
 
   // Send report email function
-  const sendReportEmail = async (emailAddress, reportData) => {
-    console.log('sendReportEmail called with:', emailAddress);
-    if (!emailAddress || !emailAddress.includes('@')) {
-      console.log('No valid email provided for report delivery');
-      return;
-    }
-    try {
-      // Wait for EmailJS to be available (with timeout)
-      let attempts = 0;
-      while (typeof window.emailjs === 'undefined' && attempts < 10) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        attempts++;
-      }
-      
-      if (typeof window.emailjs === 'undefined') {
-        console.log('EmailJS not loaded after waiting - skipping email send');
-        return;
-      }
-      
-      // Ensure EmailJS is initialized
-      if (!window.emailjsInitialized) {
-        window.emailjs.init('oviQBhcc3fq0dRlnK');
-        window.emailjsInitialized = true;
-      }
-      
-      console.log('EmailJS is loaded, preparing to send...');
-      const r = reportData || {};
-      const { iqScore } = calculateRiskScore();
-      
-      const templateParams = {
-        to_email: emailAddress,
-        to_name: businessInfo.name || 'Your Organization',
-        from_name: 'HRShieldIQ',
-        subject: `Your HRShieldIQ Report - ${businessInfo.name || 'Assessment Complete'}`,
-        iq_score: r.score || iqScore,
-        risk_level: r.riskLevel || (iqScore < 200 ? 'HIGH RISK' : iqScore < 300 ? 'ELEVATED RISK' : iqScore < 400 ? 'MODERATE' : 'STRONG'),
-        critical_issues: r.criticalCount || 0,
-        attention_items: r.attentionCount || 0,
-        good_practices: r.goodCount || 0,
-        report_summary: r.executiveSummary || 'Assessment completed. Download your PDF report for full details and recommendations.'
-      };
-
-      console.log('Sending email to:', emailAddress);
-      const result = await window.emailjs.send('service_9hdzso6', 'template_e7m1f2h', templateParams);
-      console.log('Email sent successfully:', result);
-    } catch (error) {
-      console.error('Failed to send report email:', error);
-    }
-  };
-
   // Send immediate confirmation email (doesn't wait for AI report)
   const sendImmediateEmail = async (emailAddress) => {
     console.log('Sending immediate confirmation email...');
